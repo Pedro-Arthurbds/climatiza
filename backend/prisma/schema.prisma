@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets Ticket[]
+
+  statusChanges TicketStatusHistory[]
+  notes         TicketNote[]
+  attachments   TicketAttachment[]
+}
+
+enum Role {
+  ADMIN
+  TECNICO
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  cnpj      String?  @unique
+  phone     String?
+  email     String?
+  address   String?
+  logoUrl   String?
+  slaHours  Int      @default(24)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  doc       String    @unique
+  phone     String
+  isActive  Boolean   @default(true)
+  addresses Address[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tickets          Ticket[]
+  notificationLogs NotificationLog[]
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  street       String
+  number       String
+  neighborhood String
+  city         String
+  state        String
+  zipcode      String
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tickets Ticket[]
+}
+
+model ServiceType {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id                String       @id @default(cuid())
+  clientId          String
+  client            Client       @relation(fields: [clientId], references: [id])
+  addressId         String
+  address           Address      @relation(fields: [addressId], references: [id])
+  serviceTypeId     String
+  serviceType       ServiceType  @relation(fields: [serviceTypeId], references: [id])
+  userId            String?
+  user              User?        @relation(fields: [userId], references: [id])
+  equipmentBrand    String
+  equipmentLocation String
+  problem           String
+  status            TicketStatus @default(ABERTO)
+  scheduledAt       DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  statusHistory TicketStatusHistory[]
+  notes         TicketNote[]
+  attachments   TicketAttachment[]
+
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// Trilha de auditoria das mudanças de status — preserva quem mudou e
+// quando, mesmo que o técnico seja desativado depois.
+model TicketStatusHistory {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromStatus TicketStatus?
+  toStatus   TicketStatus
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id])
+  note       String?
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+// Observações internas — visíveis só para a equipe, nunca para o cliente.
+model TicketNote {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticketId])
+}
+
+// Anexos (fotos/documentos). Guarda a URL, não o binário — o upload em si
+// depende de definir um provedor de storage (S3, Cloudinary, etc.).
+model TicketAttachment {
+  id           String   @id @default(cuid())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  filename     String
+  url          String
+  mimeType     String?
+  createdAt    DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+enum TicketStatus {
+  ABERTO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+model NotificationLog {
+  id         String           @id @default(cuid())
+  clientId   String
+  client     Client           @relation(fields: [clientId], references: [id])
+  type       NotificationType
+  message    String
+  resolution Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
+
+enum NotificationType {
+  MANUTENCAO_VENCIDA
+}
