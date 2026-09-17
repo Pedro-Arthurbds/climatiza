@@ -10,6 +10,7 @@ cd backend
 cp .env.example .env        # ajuste DATABASE_URL, CORS_ORIGIN e JWT_SECRET
 npm install
 npm run prisma:generate
+npm run seed                # cria o primeiro usuário ADMIN (admin@climatiza.com / admin123)
 npm run dev
 ```
 

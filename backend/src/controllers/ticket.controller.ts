@@ -59,6 +59,7 @@ const include = {
 
 const includeDetalhe = {
   ...include,
+  client: { include: { addresses: true } },
   statusHistory: {
     include: { user: { select: { id: true, name: true } } },
     orderBy: { createdAt: "desc" },

@@ -47,7 +47,7 @@ export async function resumo(_req: Request, res: Response) {
         where: { userId: null, status: "ABERTO" },
       }),
 
-      prisma.$queryRaw<{ media_horas: number | null }[]>`
+      prisma.$queryRaw<{ media_horas: unknown }[]>`
         SELECT AVG(EXTRACT(EPOCH FROM ("completedAt" - "createdAt")) / 3600) as media_horas
         FROM "Ticket"
         WHERE status = 'CONCLUIDO' AND "completedAt" IS NOT NULL
@@ -66,9 +66,10 @@ export async function resumo(_req: Request, res: Response) {
     atrasados,
     agendadosHoje,
     semTecnico,
-    tempoMedioAtendimentoHoras: tempoMedio[0]?.media_horas
-      ? Number(tempoMedio[0].media_horas.toFixed(1))
-      : null,
+    tempoMedioAtendimentoHoras:
+      tempoMedio[0]?.media_horas != null
+        ? Number(Number(tempoMedio[0].media_horas).toFixed(1))
+        : null,
     slaHoras: slaHours,
   });
 }
