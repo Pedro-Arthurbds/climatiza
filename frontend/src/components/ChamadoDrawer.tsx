@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type {
+  AuditLogEntry,
   ChamadoDetalhe,
   TicketStatus,
   TipoServico,
@@ -38,6 +39,102 @@ function paraInputLocal(valor: string | null) {
   const d = new Date(valor);
   const offset = d.getTimezoneOffset() * 60000;
   return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+}
+
+const labelCampo: Record<string, string> = {
+  clientId: "Cliente",
+  addressId: "Endereço",
+  serviceTypeId: "Tipo de serviço",
+  equipmentBrand: "Marca do equipamento",
+  equipmentLocation: "Local do equipamento",
+  problem: "Problema relatado",
+  name: "Nome",
+  email: "E-mail",
+  doc: "CPF/CNPJ",
+  phone: "Telefone",
+  isActive: "Ativo",
+  street: "Rua",
+  number: "Número",
+  neighborhood: "Bairro",
+  city: "Cidade",
+  state: "UF",
+  zipcode: "CEP",
+};
+
+interface ItemHistorico {
+  id: string;
+  createdAt: string;
+  autor: string;
+  texto: string;
+  detalhe?: string;
+}
+
+function descreverAuditoria(a: AuditLogEntry): ItemHistorico | null {
+  const autor = a.user?.name ?? "Sistema";
+  const changes = a.changes as { before?: any; after?: any } | null;
+
+  if (a.action === "CREATED") return null; // já aparece via "Chamado aberto"
+
+  if (a.action === "UPDATED") {
+    const before = changes?.before ?? {};
+    const after = changes?.after ?? {};
+    const linhas = Object.keys(after).map((campo) => {
+      const rotulo = labelCampo[campo] ?? campo;
+      return `${rotulo}: ${before[campo] ?? "—"} → ${after[campo] ?? "—"}`;
+    });
+    return {
+      id: `audit-${a.id}`,
+      createdAt: a.createdAt,
+      autor,
+      texto: "Dados editados",
+      detalhe: linhas.join(" · "),
+    };
+  }
+
+  if (a.action === "ASSIGNED_TECHNICIAN") {
+    return {
+      id: `audit-${a.id}`,
+      createdAt: a.createdAt,
+      autor,
+      texto: `Técnico alterado: ${changes?.before ?? "—"} → ${changes?.after ?? "—"}`,
+    };
+  }
+
+  if (a.action === "RESCHEDULED") {
+    return {
+      id: `audit-${a.id}`,
+      createdAt: a.createdAt,
+      autor,
+      texto: `Reagendado: ${formatarData(changes?.before ?? null)} → ${formatarData(changes?.after ?? null)}`,
+    };
+  }
+
+  return {
+    id: `audit-${a.id}`,
+    createdAt: a.createdAt,
+    autor,
+    texto: a.action,
+  };
+}
+
+function montarHistorico(chamado: ChamadoDetalhe): ItemHistorico[] {
+  const doStatus: ItemHistorico[] = chamado.statusHistory.map((h) => ({
+    id: `status-${h.id}`,
+    createdAt: h.createdAt,
+    autor: h.user?.name ?? "Sistema",
+    texto: h.fromStatus
+      ? `${rotuloStatus[h.fromStatus]} → ${rotuloStatus[h.toStatus]}`
+      : rotuloStatus[h.toStatus],
+    detalhe: h.note ?? undefined,
+  }));
+
+  const doAudit = chamado.auditLog
+    .map(descreverAuditoria)
+    .filter((item): item is ItemHistorico => item !== null);
+
+  return [...doStatus, ...doAudit].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export function ChamadoDrawer({
@@ -202,19 +299,17 @@ export function ChamadoDrawer({
 
         {aba === "historico" && (
           <ol className="flex flex-col gap-3">
-            {chamado.statusHistory.length === 0 && (
+            {montarHistorico(chamado).length === 0 && (
               <p className="text-sm text-inkMuted">Nenhuma alteração registrada.</p>
             )}
-            {chamado.statusHistory.map((h) => (
-              <li key={h.id} className="rounded-md border border-border bg-surfaceAlt p-3">
-                <p className="text-sm">
-                  {h.fromStatus
-                    ? `${rotuloStatus[h.fromStatus]} → ${rotuloStatus[h.toStatus]}`
-                    : rotuloStatus[h.toStatus]}
-                </p>
-                {h.note && <p className="mt-1 text-xs text-inkMuted">{h.note}</p>}
+            {montarHistorico(chamado).map((item) => (
+              <li key={item.id} className="rounded-md border border-border bg-surfaceAlt p-3">
+                <p className="text-sm">{item.texto}</p>
+                {item.detalhe && (
+                  <p className="mt-1 text-xs text-inkMuted">{item.detalhe}</p>
+                )}
                 <p className="mt-1 text-xs text-inkMuted">
-                  {h.user?.name ?? "Sistema"} · {formatarData(h.createdAt)}
+                  {item.autor} · {formatarData(item.createdAt)}
                 </p>
               </li>
             ))}

@@ -26,6 +26,7 @@ model User {
   statusChanges TicketStatusHistory[]
   notes         TicketNote[]
   attachments   TicketAttachment[]
+  auditLogs     AuditLog[]
 }
 
 enum Role {
@@ -42,6 +43,9 @@ model Company {
   address   String?
   logoUrl   String?
   slaHours  Int      @default(24)
+  // Quantos dias antes do vencimento da manutenção preventiva o job
+  // dispara o lembrete (LEMBRETE_MANUTENCAO), antes de virar VENCIDA.
+  maintenanceReminderDays Int @default(7)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -84,7 +88,13 @@ model ServiceType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tickets Ticket[]
+  // Quantos dias entre uma manutenção e a próxima, pra esse tipo de
+  // serviço ser tratado como preventivo recorrente. Nulo = não recorrente,
+  // o job de manutenção vencida ignora esses tipos.
+  maintenanceIntervalDays Int?
+
+  tickets           Ticket[]
+  notificationLogs  NotificationLog[]
 }
 
 model Ticket {
@@ -171,13 +181,40 @@ model NotificationLog {
   id         String           @id @default(cuid())
   clientId   String
   client     Client           @relation(fields: [clientId], references: [id])
+  // Opcional — só preenchido pros tipos ligados a manutenção preventiva,
+  // onde o job precisa saber qual tipo de serviço pra não duplicar alerta.
+  serviceTypeId String?
+  serviceType   ServiceType? @relation(fields: [serviceTypeId], references: [id])
   type       NotificationType
   message    String
   resolution Boolean          @default(false)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
+
+  @@index([clientId])
 }
 
 enum NotificationType {
   MANUTENCAO_VENCIDA
+  LEMBRETE_MANUTENCAO
+  AGENDAMENTO
+  TECNICO_ATRIBUIDO
+  CHAMADO_CONCLUIDO
+}
+
+// Trilha de auditoria genérica — cobre criação/edição de chamado, troca de
+// técnico, reagendamento e edição de cliente/endereço. Não substitui o
+// TicketStatusHistory (que já é específico e tipado pra mudança de status),
+// só cobre o que ele não cobre.
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  changes    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
 }

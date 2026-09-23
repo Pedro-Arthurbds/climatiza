@@ -136,9 +136,37 @@ export interface ChamadoDetalhe extends Chamado {
   statusHistory: HistoricoStatus[];
   notes: NotaChamado[];
   attachments: AnexoChamado[];
+  auditLog: AuditLogEntry[];
 }
 
 export interface ChamadoAgenda extends Chamado {
   atrasado: boolean;
   conflito: boolean;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  entityType: "Ticket" | "Client" | "Address";
+  entityId: string;
+  action: string;
+  changes: { before?: unknown; after?: unknown } | null;
+  createdAt: string;
+  user: { id: string; name: string } | null;
+}
+
+export type TipoNotificacao =
+  | "MANUTENCAO_VENCIDA"
+  | "LEMBRETE_MANUTENCAO"
+  | "AGENDAMENTO"
+  | "TECNICO_ATRIBUIDO"
+  | "CHAMADO_CONCLUIDO";
+
+export interface Notificacao {
+  id: string;
+  type: TipoNotificacao;
+  message: string;
+  resolution: boolean;
+  createdAt: string;
+  client: { id: string; name: string };
+  serviceType: { id: string; name: string } | null;
 }

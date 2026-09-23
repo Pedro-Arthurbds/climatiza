@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { diffCampos, registrarAuditoria } from "../utils/audit";
 
 const enderecoSchema = z.object({
   street: z.string().min(1),
@@ -47,28 +48,66 @@ export async function buscar(req: Request, res: Response) {
 
 export async function criar(req: Request, res: Response) {
   const { addresses, ...dados } = criarClientSchema.parse(req.body);
-  const client = await prisma.client.create({
-    data: { ...dados, addresses: { create: addresses } },
-    include: { addresses: true },
+
+  const client = await prisma.$transaction(async (tx) => {
+    const criado = await tx.client.create({
+      data: { ...dados, addresses: { create: addresses } },
+    });
+    await registrarAuditoria(tx, {
+      entityType: "Client",
+      entityId: criado.id,
+      action: "CREATED",
+      userId: req.userId,
+      changes: dados,
+    });
+    return tx.client.findUniqueOrThrow({
+      where: { id: criado.id },
+      include: { addresses: true },
+    });
   });
+
   return res.status(201).json(client);
 }
 
 export async function atualizar(req: Request, res: Response) {
   const dados = atualizarClientSchema.parse(req.body);
-  const client = await prisma.client.update({
-    where: { id: req.params.id },
-    data: dados,
-    include: { addresses: true },
+  const atual = await prisma.client.findUniqueOrThrow({ where: { id: req.params.id } });
+  const { before, after } = diffCampos(atual, dados);
+
+  const client = await prisma.$transaction(async (tx) => {
+    await tx.client.update({ where: { id: atual.id }, data: dados });
+    if (Object.keys(after).length > 0) {
+      await registrarAuditoria(tx, {
+        entityType: "Client",
+        entityId: atual.id,
+        action: "UPDATED",
+        userId: req.userId,
+        changes: { before, after },
+      });
+    }
+    return tx.client.findUniqueOrThrow({
+      where: { id: atual.id },
+      include: { addresses: true },
+    });
   });
+
   return res.json(client);
 }
 
 // Soft delete — cliente pode ter chamados vinculados (relação RESTRICT).
 export async function desativar(req: Request, res: Response) {
-  const client = await prisma.client.update({
-    where: { id: req.params.id },
-    data: { isActive: false },
+  const client = await prisma.$transaction(async (tx) => {
+    const atualizado = await tx.client.update({
+      where: { id: req.params.id },
+      data: { isActive: false },
+    });
+    await registrarAuditoria(tx, {
+      entityType: "Client",
+      entityId: req.params.id,
+      action: "DEACTIVATED",
+      userId: req.userId,
+    });
+    return atualizado;
   });
   return res.json(client);
 }

@@ -17,6 +17,7 @@ export function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,6 +25,29 @@ export function Clientes() {
   const [phone, setPhone] = useState("");
   const [endereco, setEndereco] = useState(enderecoVazio);
   const [enviando, setEnviando] = useState(false);
+
+  function limparFormulario() {
+    setName("");
+    setEmail("");
+    setDoc("");
+    setPhone("");
+    setEndereco(enderecoVazio);
+    setClienteEditandoId(null);
+  }
+
+  function abrirFormulario(cliente?: Cliente) {
+    if (cliente) {
+      setClienteEditandoId(cliente.id);
+      setName(cliente.name);
+      setEmail(cliente.email);
+      setDoc(cliente.doc);
+      setPhone(cliente.phone);
+      setEndereco(cliente.addresses[0] ?? enderecoVazio);
+    } else {
+      limparFormulario();
+    }
+    setMostrarForm(true);
+  }
 
   async function carregar() {
     setCarregando(true);
@@ -40,20 +64,26 @@ export function Clientes() {
     e.preventDefault();
     setEnviando(true);
     try {
-      await api.post("/clientes", {
-        name,
-        email,
-        doc,
-        phone,
-        addresses: [endereco],
-      });
-      setName("");
-      setEmail("");
-      setDoc("");
-      setPhone("");
-      setEndereco(enderecoVazio);
+      if (clienteEditandoId) {
+        await api.patch(`/clientes/${clienteEditandoId}`, {
+          name,
+          email,
+          doc,
+          phone,
+        });
+      } else {
+        await api.post("/clientes", {
+          name,
+          email,
+          doc,
+          phone,
+          addresses: [endereco],
+        });
+      }
+
+      limparFormulario();
       setMostrarForm(false);
-      carregar();
+      await carregar();
     } finally {
       setEnviando(false);
     }
@@ -65,7 +95,16 @@ export function Clientes() {
         <h1 className="text-2xl font-extrabold tracking-tight">Clientes</h1>
         {user?.role === "ADMIN" && (
           <button
-            onClick={() => setMostrarForm((v) => !v)}
+            type="button"
+            onClick={() => {
+              if (mostrarForm && !clienteEditandoId) {
+                limparFormulario();
+              }
+              setMostrarForm((v) => !v);
+              if (!mostrarForm) {
+                limparFormulario();
+              }
+            }}
             className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-base hover:opacity-90"
           >
             {mostrarForm ? "Fechar" : "Novo cliente"}
@@ -95,21 +134,35 @@ export function Clientes() {
             <input required value={phone} onChange={(e) => setPhone(e.target.value)} className="campo-input" />
           </label>
 
-          <div className="col-span-2 mt-2 border-t border-border pt-4">
-            <p className="mb-3 text-sm font-semibold">Endereço</p>
-            <div className="grid grid-cols-3 gap-3">
-              <input required placeholder="Rua" value={endereco.street} onChange={(e) => setEndereco({ ...endereco, street: e.target.value })} className="campo-input" />
-              <input required placeholder="Número" value={endereco.number} onChange={(e) => setEndereco({ ...endereco, number: e.target.value })} className="campo-input" />
-              <input required placeholder="Bairro" value={endereco.neighborhood} onChange={(e) => setEndereco({ ...endereco, neighborhood: e.target.value })} className="campo-input" />
-              <input required placeholder="Cidade" value={endereco.city} onChange={(e) => setEndereco({ ...endereco, city: e.target.value })} className="campo-input" />
-              <input required placeholder="UF" maxLength={2} value={endereco.state} onChange={(e) => setEndereco({ ...endereco, state: e.target.value.toUpperCase() })} className="campo-input" />
-              <input required placeholder="CEP" value={endereco.zipcode} onChange={(e) => setEndereco({ ...endereco, zipcode: e.target.value })} className="campo-input" />
+{!clienteEditandoId && (
+            <div className="col-span-2 mt-2 border-t border-border pt-4">
+              <p className="mb-3 text-sm font-semibold">Endereço</p>
+              <div className="grid grid-cols-3 gap-3">
+                <input required placeholder="Rua" value={endereco.street} onChange={(e) => setEndereco({ ...endereco, street: e.target.value })} className="campo-input" />
+                <input required placeholder="Número" value={endereco.number} onChange={(e) => setEndereco({ ...endereco, number: e.target.value })} className="campo-input" />
+                <input required placeholder="Bairro" value={endereco.neighborhood} onChange={(e) => setEndereco({ ...endereco, neighborhood: e.target.value })} className="campo-input" />
+                <input required placeholder="Cidade" value={endereco.city} onChange={(e) => setEndereco({ ...endereco, city: e.target.value })} className="campo-input" />
+                <input required placeholder="UF" maxLength={2} value={endereco.state} onChange={(e) => setEndereco({ ...endereco, state: e.target.value.toUpperCase() })} className="campo-input" />
+                <input required placeholder="CEP" value={endereco.zipcode} onChange={(e) => setEndereco({ ...endereco, zipcode: e.target.value })} className="campo-input" />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="col-span-2 flex justify-end">
+          <div className="col-span-2 flex justify-end gap-3">
+            {clienteEditandoId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarForm(false);
+                  limparFormulario();
+                }}
+                className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-inkMuted hover:opacity-90"
+              >
+                Cancelar
+              </button>
+            )}
             <button type="submit" disabled={enviando} className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-base hover:opacity-90 disabled:opacity-50">
-              {enviando ? "Salvando..." : "Salvar cliente"}
+              {enviando ? "Salvando..." : clienteEditandoId ? "Salvar alterações" : "Salvar cliente"}
             </button>
           </div>
         </form>
@@ -123,17 +176,18 @@ export function Clientes() {
               <th className="px-4 py-3">Contato</th>
               <th className="px-4 py-3">CPF/CNPJ</th>
               <th className="px-4 py-3">Endereços</th>
+              {user?.role === "ADMIN" && <th className="px-4 py-3">Ações</th>}
             </tr>
           </thead>
           <tbody>
             {carregando && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-inkMuted">Carregando...</td>
+                <td colSpan={user?.role === "ADMIN" ? 5 : 4} className="px-4 py-6 text-center text-inkMuted">Carregando...</td>
               </tr>
             )}
             {!carregando && clientes.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-inkMuted">Nenhum cliente cadastrado.</td>
+                <td colSpan={user?.role === "ADMIN" ? 5 : 4} className="px-4 py-6 text-center text-inkMuted">Nenhum cliente cadastrado.</td>
               </tr>
             )}
             {clientes.map((c) => (
@@ -147,6 +201,17 @@ export function Clientes() {
                 <td className="px-4 py-3 text-inkMuted">
                   {c.addresses.length} endereço(s)
                 </td>
+                {user?.role === "ADMIN" && (
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => abrirFormulario(c)}
+                      className="text-xs font-semibold text-accent hover:underline"
+                    >
+                      Editar
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

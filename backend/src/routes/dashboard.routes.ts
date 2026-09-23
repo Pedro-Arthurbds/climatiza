@@ -4,8 +4,9 @@ import {
   grafico,
   porTecnico,
   resumo,
+  verificarManutencoesAgora,
 } from "../controllers/dashboard.controller";
-import { autenticar } from "../middlewares/auth";
+import { autenticar, exigirAdmin } from "../middlewares/auth";
 import { asyncHandler } from "../middlewares/errorHandler";
 
 const router = Router();
@@ -17,5 +18,11 @@ router.get("/resumo", asyncHandler(resumo));
 router.get("/por-tecnico", asyncHandler(porTecnico));
 router.get("/grafico", asyncHandler(grafico));
 router.get("/alertas", asyncHandler(alertas));
+
+router.post(
+  "/verificar-manutencoes",
+  exigirAdmin,
+  asyncHandler(verificarManutencoesAgora)
+);
 
 export default router;

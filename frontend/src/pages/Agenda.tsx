@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { ChamadoDrawer } from "../components/ChamadoDrawer";
 import { useAuth } from "../context/AuthContext";
@@ -55,6 +56,7 @@ function chaveDia(d: Date | string) {
 }
 
 export function Agenda() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const ehAdmin = user?.role === "ADMIN";
 
@@ -164,6 +166,9 @@ export function Agenda() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button onClick={() => navigate("/chamados")} className="botao-nav">
+            Ver chamados
+          </button>
           <button onClick={() => navegar(-1)} className="botao-nav">‹</button>
           <button onClick={() => setReferencia(new Date())} className="botao-nav">
             Hoje

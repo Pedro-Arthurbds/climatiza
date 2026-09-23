@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { verificarManutencoes } from "../jobs/manutencaoVencida";
 import { prisma } from "../lib/prisma";
 
 const STATUS_ABERTOS = ["ABERTO", "EM_ANDAMENTO"] as const;
@@ -147,4 +148,11 @@ export async function alertas(_req: Request, res: Response) {
     take: 20,
   });
   return res.json(logs);
+}
+
+// Dispara manualmente o job de manutenção vencida (que normalmente roda
+// sozinho às 8h) — útil pra testar sem esperar o cron.
+export async function verificarManutencoesAgora(_req: Request, res: Response) {
+  const resultado = await verificarManutencoes();
+  return res.json(resultado);
 }

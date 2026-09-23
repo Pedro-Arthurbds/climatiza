@@ -7,6 +7,7 @@ import { Chamados } from "./pages/Chamados";
 import { Clientes } from "./pages/Clientes";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
+import { Notificacoes } from "./pages/Notificacoes";
 import { TiposServico } from "./pages/TiposServico";
 import { Usuarios } from "./pages/Usuarios";
 
@@ -22,6 +23,7 @@ export function App() {
             <Route path="/chamados" element={<Chamados />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/clientes" element={<Clientes />} />
+            <Route path="/notificacoes" element={<Notificacoes />} />
 
             <Route element={<ProtectedRoute allow={["ADMIN"]} />}>
               <Route path="/tipos-servico" element={<TiposServico />} />

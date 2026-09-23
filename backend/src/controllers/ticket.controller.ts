@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middlewares/errorHandler";
+import { diffCampos, registrarAuditoria } from "../utils/audit";
+import { registrarNotificacao } from "../services/notificacoes";
 
 const criarTicketSchema = z.object({
   clientId: z.string().min(1),
@@ -59,6 +61,8 @@ const include = {
 
 const includeDetalhe = {
   ...include,
+  // O formulário de edição precisa da lista de endereços do cliente,
+  // que `client: true` sozinho não traz.
   client: { include: { addresses: true } },
   statusHistory: {
     include: { user: { select: { id: true, name: true } } },
@@ -101,14 +105,23 @@ export async function buscar(req: Request, res: Response) {
     where: { id: req.params.id },
     include: includeDetalhe,
   });
-  return res.json(ticket);
+
+  // AuditLog é polimórfico (entityType + entityId), não dá pra trazer via
+  // include do Prisma — busca à parte e anexa na resposta.
+  const auditLog = await prisma.auditLog.findMany({
+    where: { entityType: "Ticket", entityId: ticket.id },
+    include: { user: { select: { id: true, name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return res.json({ ...ticket, auditLog });
 }
 
 export async function criar(req: Request, res: Response) {
   const dados = criarTicketSchema.parse(req.body);
 
-  // Cria o chamado e o primeiro registro de histórico na mesma transação,
-  // pra nunca existir chamado sem trilha de auditoria.
+  // Cria o chamado, o primeiro registro de histórico de status e a entrada
+  // de auditoria na mesma transação, pra nunca existir chamado sem rastro.
   const ticket = await prisma.$transaction(async (tx) => {
     const criado = await tx.ticket.create({ data: dados });
     await tx.ticketStatusHistory.create({
@@ -120,24 +133,70 @@ export async function criar(req: Request, res: Response) {
         note: "Chamado aberto",
       },
     });
+    await registrarAuditoria(tx, {
+      entityType: "Ticket",
+      entityId: criado.id,
+      action: "CREATED",
+      userId: req.userId,
+      changes: dados,
+    });
     return tx.ticket.findUniqueOrThrow({
       where: { id: criado.id },
       include: includeDetalhe,
     });
   });
 
+  // Fora da transação — é I/O externo (canal de envio), não deve travar
+  // nem reverter a criação do chamado se falhar.
+  if (dados.scheduledAt) {
+    await registrarNotificacao({
+      clientId: ticket.clientId,
+      type: "AGENDAMENTO",
+      mensagem: `Seu atendimento foi agendado para ${new Date(dados.scheduledAt).toLocaleString("pt-BR")}.`,
+    });
+  }
+  if (dados.userId && ticket.user) {
+    await registrarNotificacao({
+      clientId: ticket.clientId,
+      type: "TECNICO_ATRIBUIDO",
+      mensagem: `O técnico ${ticket.user.name} foi designado para o seu atendimento.`,
+    });
+  }
+
   return res.status(201).json(ticket);
 }
 
 export async function atualizar(req: Request, res: Response) {
   const dados = atualizarTicketSchema.parse(req.body);
-  const ticket = await prisma.ticket.update({
+  const atual = await prisma.ticket.findUniqueOrThrow({
     where: { id: req.params.id },
-    data: dados,
-    include: includeDetalhe,
   });
+
+  const { before, after } = diffCampos(atual, dados);
+
+  const ticket = await prisma.$transaction(async (tx) => {
+    await tx.ticket.update({ where: { id: atual.id }, data: dados });
+
+    // Só grava auditoria se algo de fato mudou (evita ruído em PATCHs vazios).
+    if (Object.keys(after).length > 0) {
+      await registrarAuditoria(tx, {
+        entityType: "Ticket",
+        entityId: atual.id,
+        action: "UPDATED",
+        userId: req.userId,
+        changes: { before, after },
+      });
+    }
+
+    return tx.ticket.findUniqueOrThrow({
+      where: { id: atual.id },
+      include: includeDetalhe,
+    });
+  });
+
   return res.json(ticket);
 }
+
 
 export async function atualizarStatus(req: Request, res: Response) {
   const { status, note } = statusSchema.parse(req.body);
@@ -183,31 +242,114 @@ export async function atualizarStatus(req: Request, res: Response) {
     });
   });
 
+  if (status === "CONCLUIDO") {
+    await registrarNotificacao({
+      clientId: atual.clientId,
+      serviceTypeId: atual.serviceTypeId,
+      type: "CHAMADO_CONCLUIDO",
+      mensagem: "Seu atendimento foi concluído.",
+    });
+  }
+
   return res.json(ticket);
 }
 
 export async function atribuir(req: Request, res: Response) {
   const { userId } = atribuirSchema.parse(req.body);
-  const ticket = await prisma.ticket.update({
+  const atual = await prisma.ticket.findUniqueOrThrow({
     where: { id: req.params.id },
-    data: { userId },
-    include: includeDetalhe,
+    select: { userId: true, clientId: true },
   });
+
+  // Resolve os nomes pra a entrada de auditoria ficar legível (em vez de
+  // guardar só o id, que não diz nada quando lido depois).
+  const [tecnicoAntes, tecnicoDepois] = await Promise.all([
+    atual.userId
+      ? prisma.user.findUnique({ where: { id: atual.userId }, select: { name: true } })
+      : null,
+    userId
+      ? prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+      : null,
+  ]);
+
+  const ticket = await prisma.$transaction(async (tx) => {
+    await tx.ticket.update({ where: { id: req.params.id }, data: { userId } });
+    await registrarAuditoria(tx, {
+      entityType: "Ticket",
+      entityId: req.params.id,
+      action: "ASSIGNED_TECHNICIAN",
+      userId: req.userId,
+      changes: {
+        before: tecnicoAntes?.name ?? "Sem técnico",
+        after: tecnicoDepois?.name ?? "Sem técnico",
+      },
+    });
+    return tx.ticket.findUniqueOrThrow({
+      where: { id: req.params.id },
+      include: includeDetalhe,
+    });
+  });
+
+  if (userId && tecnicoDepois) {
+    await registrarNotificacao({
+      clientId: atual.clientId,
+      type: "TECNICO_ATRIBUIDO",
+      mensagem: `O técnico ${tecnicoDepois.name} foi designado para o seu atendimento.`,
+    });
+  }
+
   return res.json(ticket);
 }
 
 export async function reagendar(req: Request, res: Response) {
   const { scheduledAt } = reagendarSchema.parse(req.body);
-  const ticket = await prisma.ticket.update({
+  const atual = await prisma.ticket.findUniqueOrThrow({
     where: { id: req.params.id },
-    data: { scheduledAt },
-    include: includeDetalhe,
+    select: { scheduledAt: true, clientId: true },
   });
+
+  const ticket = await prisma.$transaction(async (tx) => {
+    await tx.ticket.update({ where: { id: req.params.id }, data: { scheduledAt } });
+    await registrarAuditoria(tx, {
+      entityType: "Ticket",
+      entityId: req.params.id,
+      action: "RESCHEDULED",
+      userId: req.userId,
+      changes: {
+        before: atual.scheduledAt?.toISOString() ?? null,
+        after: scheduledAt?.toISOString() ?? null,
+      },
+    });
+    return tx.ticket.findUniqueOrThrow({
+      where: { id: req.params.id },
+      include: includeDetalhe,
+    });
+  });
+
+  if (scheduledAt) {
+    await registrarNotificacao({
+      clientId: atual.clientId,
+      type: "AGENDAMENTO",
+      mensagem: `Seu atendimento foi reagendado para ${scheduledAt.toLocaleString("pt-BR")}.`,
+    });
+  }
+
   return res.json(ticket);
 }
 
 export async function remover(req: Request, res: Response) {
-  await prisma.ticket.delete({ where: { id: req.params.id } });
+  // Auditoria não tem FK pro Ticket (é por id solto), então sobrevive à
+  // exclusão de propósito — é o único jeito de saber depois que um chamado
+  // existiu e foi apagado.
+  await prisma.$transaction(async (tx) => {
+    await registrarAuditoria(tx, {
+      entityType: "Ticket",
+      entityId: req.params.id,
+      action: "DELETED",
+      userId: req.userId,
+    });
+    await tx.ticket.delete({ where: { id: req.params.id } });
+  });
   return res.status(204).send();
 }
 

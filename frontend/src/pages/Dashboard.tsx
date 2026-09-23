@@ -56,27 +56,29 @@ export function Dashboard() {
         <p className="text-sm text-inkMuted">Panorama geral da operação.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <Card titulo="Abertos" valor={resumo?.abertos} corTexto="text-status-aberto" />
-        <Card titulo="Em andamento" valor={resumo?.emAndamento} corTexto="text-status-andamento" />
-        <Card titulo="Concluídos" valor={resumo?.concluidos} corTexto="text-status-concluido" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card titulo="Abertos" valor={resumo?.abertos} corTexto="text-status-aberto" icone="○" />
+        <Card titulo="Em andamento" valor={resumo?.emAndamento} corTexto="text-status-andamento" icone="◔" />
+        <Card titulo="Concluídos" valor={resumo?.concluidos} corTexto="text-status-concluido" icone="✓" />
         <Card
           titulo="Atrasados"
           valor={resumo?.atrasados}
           corTexto="text-status-cancelado"
           destaque={!!resumo?.atrasados}
+          icone="!"
         />
-        <Card titulo="Agendados hoje" valor={resumo?.agendadosHoje} />
-        <Card titulo="Sem técnico" valor={resumo?.semTecnico} />
+        <Card titulo="Agendados hoje" valor={resumo?.agendadosHoje} icone="⏱" />
+        <Card titulo="Sem técnico" valor={resumo?.semTecnico} icone="•" />
         <Card
-          titulo="Tempo médio de atendimento"
+          titulo="Tempo médio"
           valor={
             resumo?.tempoMedioAtendimentoHoras != null
               ? `${resumo.tempoMedioAtendimentoHoras}h`
               : "—"
           }
+          icone="↗"
         />
-        <Card titulo="SLA configurado" valor={resumo ? `${resumo.slaHoras}h` : undefined} />
+        <Card titulo="SLA" valor={resumo ? `${resumo.slaHoras}h` : undefined} icone="◎" />
       </div>
 
       <div className="grid grid-cols-2 gap-6">
@@ -176,20 +178,27 @@ function Card({
   valor,
   corTexto,
   destaque,
+  icone,
 }: {
   titulo: string;
   valor?: number | string;
   corTexto?: string;
   destaque?: boolean;
+  icone?: string;
 }) {
   return (
     <div
-      className={`rounded-lg border p-4 ${
-        destaque ? "border-status-cancelado/40 bg-status-cancelado/10" : "border-border bg-surface"
+      className={`metric-card ${
+        destaque ? "border-status-cancelado/40 bg-status-cancelado/10" : ""
       }`}
     >
-      <p className="text-xs font-medium uppercase text-inkMuted">{titulo}</p>
-      <p className={`mt-1 text-2xl font-extrabold ${corTexto ?? ""}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="metric-card-title">{titulo}</p>
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surfaceAlt text-sm font-bold text-inkMuted">
+          {icone ?? "•"}
+        </span>
+      </div>
+      <p className={`metric-card-value ${corTexto ?? "text-ink"}`}>
         {valor ?? "—"}
       </p>
     </div>
