@@ -8,6 +8,14 @@ import type {
   TipoServico,
   Usuario,
 } from "../types";
+import {
+  dataHoraBrasilParaIso,
+  formatarDataBrasil,
+  formatarDataHoraBrasil,
+  formatarHoraBrasil,
+  mascararDataBrasil,
+  mascararHoraBrasil,
+} from "../utils/dataBrasil";
 import { StatusBadge } from "./StatusBadge";
 
 const statusOptions: TicketStatus[] = [
@@ -23,23 +31,6 @@ const rotuloStatus: Record<TicketStatus, string> = {
   CONCLUIDO: "Concluído",
   CANCELADO: "Cancelado",
 };
-
-function formatarData(valor: string | null) {
-  if (!valor) return "—";
-  return new Date(valor).toLocaleString("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-}
-
-// Converte ISO -> valor aceito por <input type="datetime-local">, que não
-// entende timezone nem segundos.
-function paraInputLocal(valor: string | null) {
-  if (!valor) return "";
-  const d = new Date(valor);
-  const offset = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
-}
 
 const labelCampo: Record<string, string> = {
   clientId: "Cliente",
@@ -105,7 +96,7 @@ function descreverAuditoria(a: AuditLogEntry): ItemHistorico | null {
       id: `audit-${a.id}`,
       createdAt: a.createdAt,
       autor,
-      texto: `Reagendado: ${formatarData(changes?.before ?? null)} → ${formatarData(changes?.after ?? null)}`,
+      texto: `Reagendado: ${formatarDataHoraBrasil(changes?.before ?? null)} → ${formatarDataHoraBrasil(changes?.after ?? null)}`,
     };
   }
 
@@ -168,7 +159,9 @@ export function ChamadoDrawer({
     if (ehAdmin) {
       api
         .get<Usuario[]>("/usuarios")
-        .then((r) => setTecnicos(r.data.filter((u) => u.role === "TECNICO" && u.isActive)));
+        .then((r) =>
+          setTecnicos(r.data.filter((u) => (u.role === 'TECNICO' || u.role === 'ADMIN') && u.isActive))
+        );
       api.get<TipoServico[]>("/tipos-servico").then((r) => setTipos(r.data));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -288,9 +281,16 @@ export function ChamadoDrawer({
 
                 <Secao titulo="Atendimento">
                   <Linha rotulo="Técnico" valor={chamado.user?.name ?? "Não atribuído"} />
-                  <Linha rotulo="Aberto em" valor={formatarData(chamado.createdAt)} />
-                  <Linha rotulo="Agendado para" valor={formatarData(chamado.scheduledAt)} />
-                  <Linha rotulo="Concluído em" valor={formatarData(chamado.completedAt)} />
+                  <Linha rotulo="Aberto em" valor={formatarDataHoraBrasil(chamado.createdAt)} />
+                  <Linha rotulo="Agendado para" valor={formatarDataHoraBrasil(chamado.scheduledAt)} />
+                  <Linha rotulo="Manutenção preventiva" valor={chamado.isPreventiveMaintenance ? "Sim" : "Não"} />
+                  {chamado.isPreventiveMaintenance && (
+                    <>
+                      <Linha rotulo="Retorno em" valor={chamado.maintenanceReturnDays ? `${chamado.maintenanceReturnDays} dias` : "—"} />
+                      <Linha rotulo="Próximo retorno" valor={formatarDataHoraBrasil(chamado.maintenanceNextAt)} />
+                    </>
+                  )}
+                  <Linha rotulo="Concluído em" valor={formatarDataHoraBrasil(chamado.completedAt)} />
                 </Secao>
               </>
             )}
@@ -309,7 +309,7 @@ export function ChamadoDrawer({
                   <p className="mt-1 text-xs text-inkMuted">{item.detalhe}</p>
                 )}
                 <p className="mt-1 text-xs text-inkMuted">
-                  {item.autor} · {formatarData(item.createdAt)}
+                  {item.autor} · {formatarDataHoraBrasil(item.createdAt)}
                 </p>
               </li>
             ))}
@@ -339,7 +339,9 @@ function AcoesRapidas({
   tecnicos: Usuario[];
   executar: (fn: () => Promise<unknown>) => Promise<void>;
 }) {
-  const [novaData, setNovaData] = useState(paraInputLocal(chamado.scheduledAt));
+  const [novaData, setNovaData] = useState(formatarDataBrasil(chamado.scheduledAt));
+  const [novoHorario, setNovoHorario] = useState(formatarHoraBrasil(chamado.scheduledAt));
+  const [erroData, setErroData] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-surfaceAlt p-4">
@@ -390,28 +392,51 @@ function AcoesRapidas({
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase text-inkMuted">
-              Reagendar
+              Alterar data e hora
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
-                type="datetime-local"
+                type="text"
+                inputMode="numeric"
+                lang="pt-BR"
                 value={novaData}
-                onChange={(e) => setNovaData(e.target.value)}
+                onChange={(e) => setNovaData(mascararDataBrasil(e.target.value))}
                 className="campo-input max-w-xs"
+                placeholder="dd/mm/aaaa"
+                aria-label="Data no formato dia, mês e ano"
+                maxLength={10}
+              />
+              <input
+                type="text"
+                inputMode="numeric"
+                lang="pt-BR"
+                value={novoHorario}
+                onChange={(e) => setNovoHorario(mascararHoraBrasil(e.target.value))}
+                className="campo-input max-w-xs"
+                placeholder="HH:MM"
+                aria-label="Horário de Brasília"
+                maxLength={5}
               />
               <button
-                onClick={() =>
-                  executar(() =>
-                    api.patch(`/chamados/${chamado.id}/reagendar`, {
-                      scheduledAt: novaData ? new Date(novaData).toISOString() : null,
-                    })
-                  )
-                }
+                onClick={() => {
+                  setErroData(null);
+                  if (Boolean(novaData) !== Boolean(novoHorario)) {
+                    setErroData("Informe a data e o horário para reagendar, ou limpe ambos para remover o agendamento.");
+                    return;
+                  }
+                  const scheduledAt = novaData ? dataHoraBrasilParaIso(novaData, novoHorario) : null;
+                  if (novaData && !scheduledAt) {
+                    setErroData("Informe uma data válida no formato dd/mm/aaaa e um horário válido.");
+                    return;
+                  }
+                  executar(() => api.patch(`/chamados/${chamado.id}/reagendar`, { scheduledAt }));
+                }}
                 className="rounded-md bg-accent px-3 py-2 text-xs font-semibold text-base hover:opacity-90"
               >
                 Salvar
               </button>
             </div>
+            {erroData && <p className="mt-2 text-xs text-status-cancelado" role="alert">{erroData}</p>}
           </div>
         </>
       )}
@@ -569,7 +594,7 @@ function Notas({
             <p className="text-sm">{n.content}</p>
             <div className="mt-2 flex items-center justify-between">
               <p className="text-xs text-inkMuted">
-                {n.user?.name ?? "—"} · {formatarData(n.createdAt)}
+                {n.user?.name ?? "—"} · {formatarDataHoraBrasil(n.createdAt)}
               </p>
               <button
                 onClick={() =>
@@ -654,7 +679,7 @@ function Anexos({
                 {a.filename}
               </a>
               <p className="text-xs text-inkMuted">
-                {a.uploadedBy?.name ?? "—"} · {formatarData(a.createdAt)}
+                {a.uploadedBy?.name ?? "—"} · {formatarDataHoraBrasil(a.createdAt)}
               </p>
             </div>
             {ehAdmin && (

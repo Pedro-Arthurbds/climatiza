@@ -14,6 +14,13 @@ const statusOptions: TicketStatus[] = [
   "CANCELADO",
 ];
 
+const labelsStatus: Record<TicketStatus, string> = {
+  ABERTO: "Aberto",
+  EM_ANDAMENTO: "Em andamento",
+  CONCLUIDO: "Concluído",
+  CANCELADO: "Cancelado",
+};
+
 const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function inicioDoDia(d: Date) {
@@ -67,6 +74,8 @@ export function Agenda() {
   const [tipos, setTipos] = useState<TipoServico[]>([]);
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(false);
 
   const [filtroTecnico, setFiltroTecnico] = useState("");
   const [filtroCidade, setFiltroCidade] = useState("");
@@ -76,17 +85,25 @@ export function Agenda() {
   const { from, to } = useMemo(() => intervalo(visao, referencia), [visao, referencia]);
 
   async function carregar() {
-    const { data } = await api.get<ChamadoAgenda[]>("/chamados/agenda", {
-      params: {
-        from: from.toISOString(),
-        to: to.toISOString(),
-        userId: filtroTecnico || undefined,
-        city: filtroCidade || undefined,
-        status: filtroStatus || undefined,
-        serviceTypeId: filtroTipo || undefined,
-      },
-    });
-    setChamados(data);
+    setCarregando(true);
+    setErro(null);
+    try {
+      const { data } = await api.get<ChamadoAgenda[]>('/chamados/agenda', {
+        params: {
+          from: from.toISOString(),
+          to: to.toISOString(),
+          userId: filtroTecnico || undefined,
+          city: filtroCidade || undefined,
+          status: filtroStatus || undefined,
+          serviceTypeId: filtroTipo || undefined,
+        },
+      });
+      setChamados(data);
+    } catch {
+      setErro('Não foi possível carregar a agenda. Tente novamente.');
+    } finally {
+      setCarregando(false);
+    }
   }
 
   useEffect(() => {
@@ -99,7 +116,9 @@ export function Agenda() {
     if (ehAdmin) {
       api
         .get<Usuario[]>("/usuarios")
-        .then((r) => setTecnicos(r.data.filter((u) => u.role === "TECNICO" && u.isActive)));
+        .then((r) =>
+          setTecnicos(r.data.filter((u) => (u.role === 'TECNICO' || u.role === 'ADMIN') && u.isActive))
+        );
     }
   }, [ehAdmin]);
 
@@ -113,11 +132,26 @@ export function Agenda() {
     const nova = new Date(dia);
     nova.setHours(original.getHours(), original.getMinutes(), 0, 0);
 
+    const dataFormatada = nova.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const confirmar = window.confirm(
+      `Deseja reagendar este chamado para ${dataFormatada}?`
+    );
+    if (!confirmar) return;
+
     setErro(null);
+    setSucesso(null);
     try {
       await api.patch(`/chamados/${chamadoId}/reagendar`, {
         scheduledAt: nova.toISOString(),
       });
+      setSucesso(`Chamado reagendado para ${dataFormatada}.`);
       carregar();
     } catch (e: any) {
       setErro(e?.response?.data?.error ?? "Não foi possível reagendar.");
@@ -152,52 +186,96 @@ export function Agenda() {
     setReferencia(nova);
   }
 
+  function limparFiltros() {
+    setFiltroTecnico("");
+    setFiltroCidade("");
+    setFiltroStatus("");
+    setFiltroTipo("");
+  }
+
   const rotuloPeriodo =
     visao === "mes"
       ? referencia.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
       : `${from.toLocaleDateString("pt-BR")} — ${to.toLocaleDateString("pt-BR")}`;
 
+  const totalHoje = chamados.filter((chamado) => {
+    if (!chamado.scheduledAt) return false;
+    const data = new Date(chamado.scheduledAt);
+    return chaveDia(data) === chaveDia(new Date());
+  }).length;
+
+  const totalSemana = chamados.filter((chamado) => {
+    if (!chamado.scheduledAt) return false;
+    const data = new Date(chamado.scheduledAt);
+    return data >= from && data <= to;
+  }).length;
+
+  const totalPendentes = chamados.filter((chamado) => chamado.status === "ABERTO" || chamado.status === "EM_ANDAMENTO").length;
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Agenda</h1>
-          <p className="text-sm capitalize text-inkMuted">{rotuloPeriodo}</p>
+      <div className="mb-4 rounded-2xl border border-border bg-surface p-4 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Agenda</h1>
+            <p className="text-sm capitalize text-inkMuted">{rotuloPeriodo}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => navigate("/chamados")} className="botao-nav">
+              Ver chamados
+            </button>
+            <button onClick={() => navegar(-1)} className="botao-nav">‹</button>
+            <button onClick={() => setReferencia(new Date())} className="botao-nav">
+              Hoje
+            </button>
+            <button onClick={() => navegar(1)} className="botao-nav">›</button>
+
+            <div className="ml-0 flex gap-1 md:ml-3">
+              {(["dia", "semana", "mes"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setVisao(v)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-semibold capitalize ${
+                    visao === v ? "border-accent text-accent" : "border-border text-inkMuted"
+                  }`}
+                >
+                  {v === "mes" ? "mês" : v}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate("/chamados")} className="botao-nav">
-            Ver chamados
-          </button>
-          <button onClick={() => navegar(-1)} className="botao-nav">‹</button>
-          <button onClick={() => setReferencia(new Date())} className="botao-nav">
-            Hoje
-          </button>
-          <button onClick={() => navegar(1)} className="botao-nav">›</button>
-
-          <div className="ml-3 flex gap-1">
-            {(["dia", "semana", "mes"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setVisao(v)}
-                className={`rounded-md border px-3 py-1.5 text-xs font-semibold capitalize ${
-                  visao === v ? "border-accent text-accent" : "border-border text-inkMuted"
-                }`}
-              >
-                {v === "mes" ? "mês" : v}
-              </button>
-            ))}
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="rounded-xl border border-status-aberto/30 bg-status-aberto/10 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-status-aberto">Hoje</p>
+            <p className="mt-1 text-lg font-bold text-ink">{totalHoje}</p>
+          </div>
+          <div className="rounded-xl border border-accent/30 bg-accent/10 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-accent">Semana</p>
+            <p className="mt-1 text-lg font-bold text-ink">{totalSemana}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-surfaceAlt px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-inkMuted">Pendentes</p>
+            <p className="mt-1 text-lg font-bold text-ink">{totalPendentes}</p>
           </div>
         </div>
       </div>
 
       {erro && (
-        <p className="mb-4 rounded-md border border-status-cancelado/30 bg-status-cancelado/10 px-4 py-2 text-sm text-status-cancelado">
+        <p className="mb-4 rounded-md border border-status-cancelado/30 bg-status-cancelado/10 px-4 py-2 text-sm text-status-cancelado" role="alert">
           {erro}
         </p>
       )}
 
-      <div className="mb-4 grid grid-cols-4 gap-3">
+      {sucesso && (
+        <p className="mb-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-700" role="status">
+          {sucesso}
+        </p>
+      )}
+
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {ehAdmin && (
           <select
             value={filtroTecnico}
@@ -226,7 +304,7 @@ export function Agenda() {
           <option value="">Todos os status</option>
           {statusOptions.map((s) => (
             <option key={s} value={s}>
-              {s.replace("_", " ")}
+              {labelsStatus[s]}
             </option>
           ))}
         </select>
@@ -244,7 +322,29 @@ export function Agenda() {
         </select>
       </div>
 
-      {visao === "dia" ? (
+      {carregando && (
+        <div className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-inkMuted">
+          Carregando agenda...
+        </div>
+      )}
+
+      {!carregando && chamados.length === 0 && (
+        <div className="mb-4 rounded-xl border border-dashed border-border bg-surface p-6 text-center">
+          <p className="text-base font-semibold text-ink">Nenhum chamado encontrado para este período.</p>
+          <p className="mt-2 text-sm text-inkMuted">
+            Ajuste os filtros, escolha outra data ou limpe a busca para continuar.
+          </p>
+          <button
+            type="button"
+            onClick={limparFiltros}
+            className="mt-4 rounded-md border border-border bg-surfaceAlt px-3 py-1.5 text-sm font-semibold text-inkMuted"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      )}
+
+      {!carregando && chamados.length > 0 && visao === "dia" && (
         <ColunaDia
           dia={dias[0]}
           chamados={porDia.get(chaveDia(dias[0])) ?? []}
@@ -252,27 +352,31 @@ export function Agenda() {
           aoAbrir={setSelecionado}
           aoSoltar={soltarEm}
         />
-      ) : (
-        <div
-          className={`grid gap-2 ${visao === "semana" ? "grid-cols-7" : "grid-cols-7"}`}
-        >
-          {visao === "mes" &&
-            diasSemana.map((d) => (
-              <p key={d} className="pb-1 text-center text-xs font-semibold text-inkMuted">
-                {d}
-              </p>
+      )}
+
+      {!carregando && chamados.length > 0 && visao !== "dia" && (
+        <div className="overflow-x-auto">
+          <div
+            className={`grid min-w-[760px] gap-2 ${visao === "semana" ? "grid-cols-7" : "grid-cols-7"}`}
+          >
+            {visao === "mes" &&
+              diasSemana.map((d) => (
+                <p key={d} className="pb-1 text-center text-xs font-semibold text-inkMuted">
+                  {d}
+                </p>
+              ))}
+            {dias.map((dia) => (
+              <CelulaDia
+                key={dia.toISOString()}
+                dia={dia}
+                mesReferencia={referencia.getMonth()}
+                destacarMes={visao === "mes"}
+                chamados={porDia.get(chaveDia(dia)) ?? []}
+                aoAbrir={setSelecionado}
+                aoSoltar={soltarEm}
+              />
             ))}
-          {dias.map((dia) => (
-            <CelulaDia
-              key={dia.toISOString()}
-              dia={dia}
-              mesReferencia={referencia.getMonth()}
-              destacarMes={visao === "mes"}
-              chamados={porDia.get(chaveDia(dia)) ?? []}
-              aoAbrir={setSelecionado}
-              aoSoltar={soltarEm}
-            />
-          ))}
+          </div>
         </div>
       )}
 
@@ -375,7 +479,7 @@ function ColunaDia({
     >
       {grupos.length === 0 && (
         <p className="rounded-md border border-border bg-surface p-6 text-center text-sm text-inkMuted">
-          Nenhum chamado agendado para este dia.
+          Nenhum chamado agendado para este dia. Ajuste os filtros ou escolha outra data.
         </p>
       )}
       {grupos.map((g) => (

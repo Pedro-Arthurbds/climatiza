@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { verificarManutencoes } from "../jobs/manutencaoVencida";
+import { verificarRetornosPreventivos } from "../jobs/manutencaoVencida";
 import { prisma } from "../lib/prisma";
 
 const STATUS_ABERTOS = ["ABERTO", "EM_ANDAMENTO"] as const;
@@ -75,6 +75,85 @@ export async function resumo(_req: Request, res: Response) {
   });
 }
 
+// Lista de clientes/itens que exigem contato prioritário hoje, nesta semana
+// ou neste mês. Usa pendências de notificação e agendamentos para orientar a
+// operação no dia a dia com foco em retorno ao cliente.
+export async function contatosPrioritarios(_req: Request, res: Response) {
+  const agora = new Date();
+
+  const inicioHoje = new Date(agora);
+  inicioHoje.setHours(0, 0, 0, 0);
+  const fimHoje = new Date(agora);
+  fimHoje.setHours(23, 59, 59, 999);
+
+  const inicioSemana = new Date(inicioHoje);
+  inicioSemana.setDate(inicioHoje.getDate() - inicioHoje.getDay());
+  const fimSemana = new Date(inicioSemana);
+  fimSemana.setDate(inicioSemana.getDate() + 6);
+  fimSemana.setHours(23, 59, 59, 999);
+
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+  fimMes.setHours(23, 59, 59, 999);
+
+  const [hoje, semana, mes] = await Promise.all([
+    prisma.notificationLog.findMany({
+      where: {
+        resolution: false,
+        createdAt: { gte: inicioHoje, lte: fimHoje },
+      },
+      include: { client: { select: { id: true, name: true } }, serviceType: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    prisma.notificationLog.findMany({
+      where: {
+        resolution: false,
+        createdAt: { gte: inicioSemana, lte: fimSemana },
+      },
+      include: { client: { select: { id: true, name: true } }, serviceType: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    }),
+    prisma.notificationLog.findMany({
+      where: {
+        resolution: false,
+        createdAt: { gte: inicioMes, lte: fimMes },
+      },
+      include: { client: { select: { id: true, name: true } }, serviceType: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 16,
+    }),
+  ]);
+
+  return res.json({
+    hoje: hoje.map((item) => ({
+      id: item.id,
+      client: item.client,
+      serviceType: item.serviceType,
+      message: item.message,
+      type: item.type,
+      createdAt: item.createdAt,
+    })),
+    semana: semana.map((item) => ({
+      id: item.id,
+      client: item.client,
+      serviceType: item.serviceType,
+      message: item.message,
+      type: item.type,
+      createdAt: item.createdAt,
+    })),
+    mes: mes.map((item) => ({
+      id: item.id,
+      client: item.client,
+      serviceType: item.serviceType,
+      message: item.message,
+      type: item.type,
+      createdAt: item.createdAt,
+    })),
+  });
+}
+
 // Carga atual (chamados abertos/andamento) e ranking (concluídos) por técnico.
 export async function porTecnico(_req: Request, res: Response) {
   const [cargaAtual, concluidosPorTecnico, tecnicos] = await Promise.all([
@@ -89,7 +168,7 @@ export async function porTecnico(_req: Request, res: Response) {
       _count: true,
     }),
     prisma.user.findMany({
-      where: { role: "TECNICO", isActive: true },
+      where: { role: { in: ["ADMIN", "TECNICO"] }, isActive: true },
       select: { id: true, name: true },
     }),
   ]);
@@ -142,17 +221,46 @@ export async function grafico(_req: Request, res: Response) {
 // Alertas de manutenção vencida ainda não resolvidos.
 export async function alertas(_req: Request, res: Response) {
   const logs = await prisma.notificationLog.findMany({
-    where: { type: "MANUTENCAO_VENCIDA", resolution: false },
-    include: { client: { select: { id: true, name: true } } },
+    where: {
+      type: "LEMBRETE_MANUTENCAO",
+      resolution: false,
+      message: { startsWith: "Retorno preventivo previsto para" },
+    },
+    include: {
+      client: { select: { id: true, name: true } },
+      serviceType: { select: { id: true, name: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
-  return res.json(logs);
+
+  const alertasComChamado = await Promise.all(
+    logs.map(async (log) => {
+      const chamado = log.serviceTypeId
+        ? await prisma.ticket.findFirst({
+            where: {
+              clientId: log.clientId,
+              serviceTypeId: log.serviceTypeId,
+              isPreventiveMaintenance: true,
+              status: "CONCLUIDO",
+              completedAt: { not: null },
+              createdAt: { lte: log.createdAt },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { id: true },
+          })
+        : null;
+
+      return { ...log, ticketId: chamado?.id ?? null };
+    })
+  );
+
+  return res.json(alertasComChamado);
 }
 
 // Dispara manualmente o job de manutenção vencida (que normalmente roda
 // sozinho às 8h) — útil pra testar sem esperar o cron.
 export async function verificarManutencoesAgora(_req: Request, res: Response) {
-  const resultado = await verificarManutencoes();
+  const resultado = await verificarRetornosPreventivos();
   return res.json(resultado);
 }

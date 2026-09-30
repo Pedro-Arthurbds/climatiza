@@ -109,12 +109,15 @@ model Ticket {
   user              User?        @relation(fields: [userId], references: [id])
   equipmentBrand    String
   equipmentLocation String
-  problem           String
-  status            TicketStatus @default(ABERTO)
-  scheduledAt       DateTime?
-  completedAt       DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  problem                    String
+  status                     TicketStatus @default(ABERTO)
+  scheduledAt                DateTime?
+  isPreventiveMaintenance    Boolean      @default(false)
+  maintenanceReturnDays      Int?
+  maintenanceNextAt          DateTime?
+  completedAt                DateTime?
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
 
   statusHistory TicketStatusHistory[]
   notes         TicketNote[]

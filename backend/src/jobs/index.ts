@@ -1,17 +1,21 @@
 import cron from "node-cron";
-import { verificarManutencoes } from "./manutencaoVencida";
+import { verificarRetornosPreventivos } from "./manutencaoVencida";
 
-// Roda todo dia às 8h. Sem fila/worker separado de propósito — o volume
-// de um sistema single-tenant não justifica essa complexidade ainda.
+async function executarVerificacoes() {
+  try {
+    const retornos = await verificarRetornosPreventivos();
+    console.log(
+      `[job] retornos preventivos: ${retornos.criados} alerta(s) criado(s) de ${retornos.verificados} retorno(s) pendente(s).`
+    );
+  } catch (err) {
+    console.error("[job] falha ao verificar manutenções:", err);
+  }
+}
+
+// Executa ao iniciar e diariamente às 8h; evita depender do próximo cron.
 export function iniciarJobs() {
-  cron.schedule("0 8 * * *", async () => {
-    try {
-      const resultado = await verificarManutencoes();
-      console.log(
-        `[job] verificação de manutenções: ${resultado.criados} alerta(s) criado(s) de ${resultado.verificados} combinação(ões) cliente/serviço.`
-      );
-    } catch (err) {
-      console.error("[job] falha ao verificar manutenções:", err);
-    }
+  void executarVerificacoes();
+  cron.schedule("0 8 * * *", () => {
+    void executarVerificacoes();
   });
 }

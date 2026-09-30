@@ -14,6 +14,8 @@ const criarTicketSchema = z.object({
   equipmentLocation: z.string().min(1),
   problem: z.string().min(1),
   scheduledAt: z.coerce.date().optional(),
+  isPreventiveMaintenance: z.boolean().optional().default(false),
+  maintenanceReturnDays: z.coerce.number().int().min(1).max(3650).nullable().optional(),
 });
 
 const atualizarTicketSchema = z.object({
@@ -25,6 +27,8 @@ const atualizarTicketSchema = z.object({
   equipmentLocation: z.string().min(1).optional(),
   problem: z.string().min(1).optional(),
   scheduledAt: z.coerce.date().nullable().optional(),
+  isPreventiveMaintenance: z.boolean().optional(),
+  maintenanceReturnDays: z.coerce.number().int().min(1).max(3650).nullable().optional(),
 });
 
 const statusSchema = z.object({
@@ -117,13 +121,26 @@ export async function buscar(req: Request, res: Response) {
   return res.json({ ...ticket, auditLog });
 }
 
+function calcularProximaManutencao(dataBase: Date | undefined, dias: number | null | undefined) {
+  if (!dias || dias <= 0) return null;
+  const base = dataBase ? new Date(dataBase) : new Date();
+  const retorno = new Date(base);
+  retorno.setDate(retorno.getDate() + dias);
+  return retorno;
+}
+
 export async function criar(req: Request, res: Response) {
   const dados = criarTicketSchema.parse(req.body);
 
   // Cria o chamado, o primeiro registro de histórico de status e a entrada
   // de auditoria na mesma transação, pra nunca existir chamado sem rastro.
   const ticket = await prisma.$transaction(async (tx) => {
-    const criado = await tx.ticket.create({ data: dados });
+    const criado = await tx.ticket.create({
+      data: {
+        ...dados,
+        maintenanceNextAt: null,
+      },
+    });
     await tx.ticketStatusHistory.create({
       data: {
         ticketId: criado.id,
@@ -172,10 +189,19 @@ export async function atualizar(req: Request, res: Response) {
     where: { id: req.params.id },
   });
 
-  const { before, after } = diffCampos(atual, dados);
+  const dadosAtualizados: Record<string, unknown> = { ...dados };
+  if (dados.isPreventiveMaintenance !== undefined || dados.maintenanceReturnDays !== undefined) {
+    const isPreventive = dados.isPreventiveMaintenance ?? atual.isPreventiveMaintenance;
+    const dias = dados.maintenanceReturnDays ?? atual.maintenanceReturnDays ?? null;
+    dadosAtualizados.maintenanceNextAt = isPreventive && atual.completedAt
+      ? calcularProximaManutencao(atual.completedAt, dias)
+      : null;
+  }
+
+  const { before, after } = diffCampos(atual, dadosAtualizados);
 
   const ticket = await prisma.$transaction(async (tx) => {
-    await tx.ticket.update({ where: { id: atual.id }, data: dados });
+    await tx.ticket.update({ where: { id: atual.id }, data: dadosAtualizados });
 
     // Só grava auditoria se algo de fato mudou (evita ruído em PATCHs vazios).
     if (Object.keys(after).length > 0) {
@@ -213,18 +239,27 @@ export async function atualizarStatus(req: Request, res: Response) {
     throw new AppError("O chamado já está neste status", 400);
   }
 
+  const completedAt =
+    status === "CONCLUIDO"
+      ? new Date()
+      : atual.status === "CONCLUIDO"
+        ? null
+        : atual.completedAt;
+  const maintenanceNextAt =
+    status === "CONCLUIDO" && atual.isPreventiveMaintenance
+      ? calcularProximaManutencao(completedAt ?? undefined, atual.maintenanceReturnDays)
+      : status !== "CONCLUIDO" && atual.status === "CONCLUIDO"
+        ? null
+        : atual.maintenanceNextAt;
+
   const ticket = await prisma.$transaction(async (tx) => {
     await tx.ticket.update({
       where: { id: atual.id },
       data: {
         status,
         // Marca conclusão ao concluir; limpa se sair de CONCLUIDO (reabertura).
-        completedAt:
-          status === "CONCLUIDO"
-            ? new Date()
-            : atual.status === "CONCLUIDO"
-              ? null
-              : atual.completedAt,
+        completedAt,
+        maintenanceNextAt,
       },
     });
     await tx.ticketStatusHistory.create({

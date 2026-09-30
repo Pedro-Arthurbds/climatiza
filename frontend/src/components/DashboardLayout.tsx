@@ -21,6 +21,7 @@ const INTERVALO_POLL_MS = 60_000;
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const [pendentes, setPendentes] = useState(0);
+  const [mobileMenuAberto, setMobileMenuAberto] = useState(false);
 
   useEffect(() => {
     async function carregarContagem() {
@@ -37,72 +38,119 @@ export function DashboardLayout() {
     const id = setInterval(carregarContagem, INTERVALO_POLL_MS);
     return () => clearInterval(id);
   }, []);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && mobileMenuAberto) {
+        setMobileMenuAberto(false);
+      }
+    }
 
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileMenuAberto]);
   const roleLabel = user?.role === 'ADMIN' ? 'Administrador' : 'Técnico';
+
+  const navContent = (
+    <>
+      <div className="px-5 py-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1d0ae] text-lg font-bold text-[#1e2b2b] shadow-[inset_0_0_0_1px_rgba(30,43,43,0.08)]">
+            C
+          </div>
+          <div>
+            <p className="text-xl font-black tracking-tight text-[#fffaf3]">Climatiza</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#d5d0c7]">Operação</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#3f5653] bg-[#263939] p-3">
+          <p className="text-sm font-semibold text-[#fffaf3]">{user?.name}</p>
+          <p className="text-xs text-[#d5d0c7]">{roleLabel}</p>
+        </div>
+      </div>
+
+      <nav className="flex flex-1 flex-col gap-1 px-3">
+        {links
+          .filter((link) => user && link.roles.includes(user.role))
+          .map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === "/"}
+              onClick={() => setMobileMenuAberto(false)}
+              className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}
+            >
+              <span>{link.label}</span>
+              {link.to === "/notificacoes" && pendentes > 0 && (
+                <span className="rounded-full bg-status-cancelado px-1.5 py-0.5 text-[10px] font-bold text-base">
+                  {pendentes}
+                </span>
+              )}
+            </NavLink>
+          ))}
+      </nav>
+
+      <div className="border-t border-[#3f5653] p-3">
+        <button
+          onClick={logout}
+          className="w-full rounded-xl border border-[#3f5653] bg-[#263939] px-3 py-2 text-left text-sm font-medium text-[#e2dccf] transition hover:border-[#d58e5d]/60 hover:bg-[#2d4643] hover:text-white"
+        >
+          Sair
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <div className="app-shell min-h-screen">
-      <aside className="sidebar-panel">
-        <div className="px-5 py-6">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-lg font-bold text-accent">
-              C
-            </div>
-            <div>
-              <p className="text-lg font-extrabold tracking-tight text-ink">Climatiza</p>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-inkMuted">Operação</p>
-            </div>
-          </div>
+      <a
+        href="#app-main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-base"
+      >
+        Pular para o conteúdo principal
+      </a>
 
-          <div className="rounded-xl border border-border bg-surfaceAlt/70 p-3">
-            <p className="text-sm font-semibold text-ink">{user?.name}</p>
-            <p className="text-xs text-inkMuted">{roleLabel}</p>
-          </div>
-        </div>
+      <aside className="sidebar-panel">{navContent}</aside>
 
-        <nav className="flex flex-1 flex-col gap-1 px-3">
-          {links
-            .filter((link) => user && link.roles.includes(user.role))
-            .map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.to === "/"}
-                className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}
-              >
-                <span>{link.label}</span>
-                {link.to === "/notificacoes" && pendentes > 0 && (
-                  <span className="rounded-full bg-status-cancelado px-1.5 py-0.5 text-[10px] font-bold text-base">
-                    {pendentes}
-                  </span>
-                )}
-              </NavLink>
-            ))}
-        </nav>
+      <div
+        className={`mobile-drawer-backdrop ${mobileMenuAberto ? 'is-open' : ''}`}
+        onClick={() => setMobileMenuAberto(false)}
+      />
 
-        <div className="border-t border-border p-3">
-          <button
-            onClick={logout}
-            className="w-full rounded-xl border border-border px-3 py-2 text-left text-sm font-medium text-inkMuted transition hover:border-accent/70 hover:bg-surfaceAlt hover:text-ink"
-          >
-            Sair
-          </button>
-        </div>
+      <aside
+        id="mobile-nav"
+        aria-label="Menu principal mobile"
+        className={`mobile-sidebar ${mobileMenuAberto ? 'is-open' : ''}`}
+      >
+        {navContent}
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 border-b border-border/80 bg-base/80 backdrop-blur-xl">
+      <main id="app-main-content" tabIndex={-1} className="flex-1 overflow-y-auto outline-none bg-[#f6f1e8]">
+        <header className="sticky top-0 z-10 border-b border-border/80 bg-[#f7f3eb]/90 backdrop-blur-xl">
           <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-inkMuted">Visão geral</p>
-              <h2 className="mt-1 text-xl font-bold text-ink">Operação Climatiza</h2>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label={mobileMenuAberto ? 'Fechar menu' : 'Abrir menu'}
+                aria-controls="mobile-nav"
+                aria-expanded={mobileMenuAberto}
+                onClick={() => setMobileMenuAberto((v) => !v)}
+                className="mobile-nav-toggle lg:hidden"
+              >
+                ☰
+              </button>
+
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-inkMuted">Visão geral</p>
+                <h2 className="mt-1 text-2xl text-ink">Operação Climatiza</h2>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
               <span className="hidden rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-inkMuted sm:inline-flex">
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
-              <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent">
+              <span className="rounded-full border border-[#2f4f48]/20 bg-[#2f4f48]/10 px-3 py-1.5 text-xs font-semibold text-accent">
                 {roleLabel}
               </span>
             </div>

@@ -16,6 +16,7 @@ export async function registrarNotificacao(params: {
   serviceTypeId?: string;
   type: TipoNotificacao;
   mensagem: string;
+  enviarAoCliente?: boolean;
 }) {
   await prisma.notificationLog.create({
     data: {
@@ -25,6 +26,8 @@ export async function registrarNotificacao(params: {
       message: params.mensagem,
     },
   });
+
+  if (params.enviarAoCliente === false) return;
 
   const cliente = await prisma.client.findUnique({
     where: { id: params.clientId },

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   alertas,
+  contatosPrioritarios,
   grafico,
   porTecnico,
   resumo,
@@ -15,6 +16,7 @@ const router = Router();
 router.use(autenticar);
 
 router.get("/resumo", asyncHandler(resumo));
+router.get("/contatos-prioritarios", asyncHandler(contatosPrioritarios));
 router.get("/por-tecnico", asyncHandler(porTecnico));
 router.get("/grafico", asyncHandler(grafico));
 router.get("/alertas", asyncHandler(alertas));

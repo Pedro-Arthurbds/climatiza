@@ -8,16 +8,16 @@ const rotulo: Record<TicketStatus, string> = {
 };
 
 const cor: Record<TicketStatus, string> = {
-  ABERTO: "bg-status-aberto/15 text-status-aberto border-status-aberto/30",
-  EM_ANDAMENTO: "bg-status-andamento/15 text-status-andamento border-status-andamento/30",
-  CONCLUIDO: "bg-status-concluido/15 text-status-concluido border-status-concluido/30",
-  CANCELADO: "bg-status-cancelado/15 text-status-cancelado border-status-cancelado/30",
+  ABERTO: "border-[#d9b171] bg-[#f8e5bf] text-[#8a5d1d]",
+  EM_ANDAMENTO: "border-[#95afc8] bg-[#dfeaf7] text-[#35577b]",
+  CONCLUIDO: "border-[#94b89a] bg-[#dff0e2] text-[#2d6646]",
+  CANCELADO: "border-[#d9a39b] bg-[#f6e1df] text-[#8c3d35]",
 };
 
 export function StatusBadge({ status }: { status: TicketStatus }) {
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2 py-1 text-xs font-semibold ${cor[status]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${cor[status]}`}
     >
       {rotulo[status]}
     </span>

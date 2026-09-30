@@ -55,6 +55,9 @@ export interface Chamado {
   problem: string;
   status: TicketStatus;
   scheduledAt: string | null;
+  isPreventiveMaintenance: boolean;
+  maintenanceReturnDays: number | null;
+  maintenanceNextAt: string | null;
   completedAt: string | null;
   createdAt: string;
   client: Cliente;
@@ -102,8 +105,10 @@ export interface AlertaManutencao {
   id: string;
   clientId: string;
   message: string;
+  type: "MANUTENCAO_VENCIDA" | "LEMBRETE_MANUTENCAO";
   resolution: boolean;
   createdAt: string;
+  ticketId: string | null;
   client: { id: string; name: string };
 }
 
