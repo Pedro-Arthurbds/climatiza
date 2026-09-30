@@ -44,7 +44,7 @@ export async function criar(req: Request, res: Response) {
 
 export async function marcarResolvido(req: Request, res: Response) {
   const log = await prisma.notificationLog.update({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     data: { resolution: true },
   });
   return res.json(log);

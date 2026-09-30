@@ -120,7 +120,7 @@ export async function listar(req: Request, res: Response) {
 }
 
 export async function buscar(req: Request, res: Response) {
-  const ticketAcessivel = await exigirAcessoAoChamado(req, req.params.id);
+  const ticketAcessivel = await exigirAcessoAoChamado(req, (req.params.id as string));
   const ticket = await prisma.ticket.findUniqueOrThrow({
     where: { id: ticketAcessivel.id },
     include: includeDetalhe,
@@ -202,7 +202,7 @@ export async function criar(req: Request, res: Response) {
 export async function atualizar(req: Request, res: Response) {
   const dados = atualizarTicketSchema.parse(req.body);
   const atual = await prisma.ticket.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
   });
 
   const dadosAtualizados: Record<string, unknown> = { ...dados };
@@ -243,7 +243,7 @@ export async function atualizar(req: Request, res: Response) {
 export async function atualizarStatus(req: Request, res: Response) {
   const { status, note } = statusSchema.parse(req.body);
   const atual = await prisma.ticket.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
   });
 
   // Técnico só move status de chamados atribuídos a ele mesmo.
@@ -308,7 +308,7 @@ export async function atualizarStatus(req: Request, res: Response) {
 export async function atribuir(req: Request, res: Response) {
   const { userId } = atribuirSchema.parse(req.body);
   const atual = await prisma.ticket.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     select: { userId: true, clientId: true },
   });
 
@@ -324,10 +324,10 @@ export async function atribuir(req: Request, res: Response) {
   ]);
 
   const ticket = await prisma.$transaction(async (tx) => {
-    await tx.ticket.update({ where: { id: req.params.id }, data: { userId } });
+    await tx.ticket.update({ where: { id: (req.params.id as string) }, data: { userId } });
     await registrarAuditoria(tx, {
       entityType: "Ticket",
-      entityId: req.params.id,
+      entityId: (req.params.id as string),
       action: "ASSIGNED_TECHNICIAN",
       userId: req.userId,
       changes: {
@@ -336,7 +336,7 @@ export async function atribuir(req: Request, res: Response) {
       },
     });
     return tx.ticket.findUniqueOrThrow({
-      where: { id: req.params.id },
+      where: { id: (req.params.id as string) },
       include: includeDetalhe,
     });
   });
@@ -355,15 +355,15 @@ export async function atribuir(req: Request, res: Response) {
 export async function reagendar(req: Request, res: Response) {
   const { scheduledAt } = reagendarSchema.parse(req.body);
   const atual = await prisma.ticket.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     select: { scheduledAt: true, clientId: true },
   });
 
   const ticket = await prisma.$transaction(async (tx) => {
-    await tx.ticket.update({ where: { id: req.params.id }, data: { scheduledAt } });
+    await tx.ticket.update({ where: { id: (req.params.id as string) }, data: { scheduledAt } });
     await registrarAuditoria(tx, {
       entityType: "Ticket",
-      entityId: req.params.id,
+      entityId: (req.params.id as string),
       action: "RESCHEDULED",
       userId: req.userId,
       changes: {
@@ -372,7 +372,7 @@ export async function reagendar(req: Request, res: Response) {
       },
     });
     return tx.ticket.findUniqueOrThrow({
-      where: { id: req.params.id },
+      where: { id: (req.params.id as string) },
       include: includeDetalhe,
     });
   });
@@ -395,11 +395,11 @@ export async function remover(req: Request, res: Response) {
   await prisma.$transaction(async (tx) => {
     await registrarAuditoria(tx, {
       entityType: "Ticket",
-      entityId: req.params.id,
+      entityId: (req.params.id as string),
       action: "DELETED",
       userId: req.userId,
     });
-    await tx.ticket.delete({ where: { id: req.params.id } });
+    await tx.ticket.delete({ where: { id: (req.params.id as string) } });
   });
   return res.status(204).send();
 }
@@ -408,7 +408,7 @@ export async function remover(req: Request, res: Response) {
 
 export async function criarNota(req: Request, res: Response) {
   const { content } = notaSchema.parse(req.body);
-  const ticket = await exigirAcessoAoChamado(req, req.params.id);
+  const ticket = await exigirAcessoAoChamado(req, (req.params.id as string));
   const nota = await prisma.ticketNote.create({
     data: { ticketId: ticket.id, userId: req.userId, content },
     include: { user: { select: { id: true, name: true } } },
@@ -418,10 +418,10 @@ export async function criarNota(req: Request, res: Response) {
 
 export async function removerNota(req: Request, res: Response) {
   const nota = await prisma.ticketNote.findUniqueOrThrow({
-    where: { id: req.params.notaId },
+    where: { id: (req.params.notaId as string) },
   });
 
-  if (nota.ticketId !== req.params.id) {
+  if (nota.ticketId !== (req.params.id as string)) {
     throw new AppError("Observação não encontrada neste chamado", 404);
   }
   await exigirAcessoAoChamado(req, nota.ticketId);
@@ -439,7 +439,7 @@ export async function removerNota(req: Request, res: Response) {
 
 export async function criarAnexo(req: Request, res: Response) {
   const dados = anexoSchema.parse(req.body);
-  const ticket = await exigirAcessoAoChamado(req, req.params.id);
+  const ticket = await exigirAcessoAoChamado(req, (req.params.id as string));
   const anexo = await prisma.ticketAttachment.create({
     data: { ...dados, ticketId: ticket.id, uploadedById: req.userId },
     include: { uploadedBy: { select: { id: true, name: true } } },
@@ -448,7 +448,7 @@ export async function criarAnexo(req: Request, res: Response) {
 }
 
 export async function removerAnexo(req: Request, res: Response) {
-  await prisma.ticketAttachment.delete({ where: { id: req.params.anexoId } });
+  await prisma.ticketAttachment.delete({ where: { id: (req.params.anexoId as string) } });
   return res.status(204).send();
 }
 

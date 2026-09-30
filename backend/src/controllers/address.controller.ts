@@ -17,14 +17,14 @@ export async function criar(req: Request, res: Response) {
 
   const endereco = await prisma.$transaction(async (tx) => {
     const criado = await tx.address.create({
-      data: { ...dados, clientId: req.params.clienteId },
+      data: { ...dados, clientId: (req.params.clienteId as string) },
     });
     await registrarAuditoria(tx, {
       entityType: "Address",
       entityId: criado.id,
       action: "CREATED",
       userId: req.userId,
-      changes: { ...dados, clientId: req.params.clienteId },
+      changes: { ...dados, clientId: (req.params.clienteId as string) },
     });
     return criado;
   });
@@ -34,7 +34,7 @@ export async function criar(req: Request, res: Response) {
 
 export async function atualizar(req: Request, res: Response) {
   const dados = enderecoSchema.partial().parse(req.body);
-  const atual = await prisma.address.findUniqueOrThrow({ where: { id: req.params.id } });
+  const atual = await prisma.address.findUniqueOrThrow({ where: { id: (req.params.id as string) } });
   const { before, after } = diffCampos(atual, dados);
 
   const endereco = await prisma.$transaction(async (tx) => {
@@ -61,11 +61,11 @@ export async function remover(req: Request, res: Response) {
   await prisma.$transaction(async (tx) => {
     await registrarAuditoria(tx, {
       entityType: "Address",
-      entityId: req.params.id,
+      entityId: (req.params.id as string),
       action: "DELETED",
       userId: req.userId,
     });
-    await tx.address.delete({ where: { id: req.params.id } });
+    await tx.address.delete({ where: { id: (req.params.id as string) } });
   });
   return res.status(204).send();
 }

@@ -40,7 +40,7 @@ export async function listar(req: Request, res: Response) {
 
 export async function buscar(req: Request, res: Response) {
   const user = await prisma.user.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     select: userSelect,
   });
   return res.json(user);
@@ -62,7 +62,7 @@ export async function criar(req: Request, res: Response) {
 export async function atualizar(req: Request, res: Response) {
   const dados = atualizarUserSchema.parse(req.body);
   const user = await prisma.user.update({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     data: {
       ...dados,
       password: dados.password ? await hashSenha(dados.password) : undefined,
@@ -76,7 +76,7 @@ export async function atualizar(req: Request, res: Response) {
 // Desativação lógica — mantém o histórico de tickets do técnico intacto.
 export async function desativar(req: Request, res: Response) {
   const user = await prisma.user.update({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     data: { isActive: false },
     select: userSelect,
   });

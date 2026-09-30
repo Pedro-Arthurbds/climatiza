@@ -25,7 +25,7 @@ export async function criar(req: Request, res: Response) {
 export async function atualizar(req: Request, res: Response) {
   const dados = serviceTypeSchema.partial().parse(req.body);
   const tipo = await prisma.serviceType.update({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     data: dados,
   });
   return res.json(tipo);
@@ -33,7 +33,7 @@ export async function atualizar(req: Request, res: Response) {
 
 export async function desativar(req: Request, res: Response) {
   const tipo = await prisma.serviceType.update({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     data: { isActive: false },
   });
   return res.json(tipo);

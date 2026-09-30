@@ -40,7 +40,7 @@ export async function listar(req: Request, res: Response) {
 
 export async function buscar(req: Request, res: Response) {
   const client = await prisma.client.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: (req.params.id as string) },
     include: { addresses: true },
   });
   return res.json(client);
@@ -71,7 +71,7 @@ export async function criar(req: Request, res: Response) {
 
 export async function atualizar(req: Request, res: Response) {
   const dados = atualizarClientSchema.parse(req.body);
-  const atual = await prisma.client.findUniqueOrThrow({ where: { id: req.params.id } });
+  const atual = await prisma.client.findUniqueOrThrow({ where: { id: (req.params.id as string) } });
   const { before, after } = diffCampos(atual, dados);
 
   const client = await prisma.$transaction(async (tx) => {
@@ -98,12 +98,12 @@ export async function atualizar(req: Request, res: Response) {
 export async function desativar(req: Request, res: Response) {
   const client = await prisma.$transaction(async (tx) => {
     const atualizado = await tx.client.update({
-      where: { id: req.params.id },
+      where: { id: (req.params.id as string) },
       data: { isActive: false },
     });
     await registrarAuditoria(tx, {
       entityType: "Client",
-      entityId: req.params.id,
+      entityId: (req.params.id as string),
       action: "DEACTIVATED",
       userId: req.userId,
     });
