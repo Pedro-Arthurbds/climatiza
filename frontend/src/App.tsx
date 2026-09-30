@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { Agenda } from "./pages/Agenda";
 import { Chamados } from "./pages/Chamados";
 import { Clientes } from "./pages/Clientes";
+import { DefinirSenha } from "./pages/DefinirSenha";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
 import { Notificacoes } from "./pages/Notificacoes";
@@ -16,6 +17,10 @@ export function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
+
+        <Route element={<ProtectedRoute allowPasswordChange />}>
+          <Route path="/definir-senha" element={<DefinirSenha />} />
+        </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>

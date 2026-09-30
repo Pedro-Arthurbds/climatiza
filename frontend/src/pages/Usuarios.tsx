@@ -60,7 +60,7 @@ export function Usuarios() {
       setPassword("");
       setRole("TECNICO");
       setMostrarForm(false);
-      setMensagemSucesso("Usuário cadastrado com sucesso.");
+      setMensagemSucesso("Usuário cadastrado. Ele deverá definir uma nova senha no primeiro acesso.");
       await carregar();
     } catch {
       setMensagemErro("Não foi possível criar o usuário. Verifique os dados e tente novamente.");
@@ -121,7 +121,7 @@ export function Usuarios() {
             <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="campo-input" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-inkMuted">Senha</span>
+            <span className="mb-1 block text-sm font-medium text-inkMuted">Senha temporária</span>
             <input required minLength={6} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="campo-input" />
           </label>
           <label className="block">

@@ -11,6 +11,7 @@ import type { AuthUser } from "../types";
 interface AuthContextValue {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<void>;
+  finishFirstAccess: (password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,6 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       async login(email, password) {
         const { data } = await api.post("/auth/login", { email, password });
+        localStorage.setItem("climatiza:token", data.token);
+        localStorage.setItem("climatiza:user", JSON.stringify(data.user));
+        setUser(data.user);
+      },
+      async finishFirstAccess(password, passwordConfirmation) {
+        const { data } = await api.post("/auth/first-password", {
+          password,
+          passwordConfirmation,
+        });
         localStorage.setItem("climatiza:token", data.token);
         localStorage.setItem("climatiza:user", JSON.stringify(data.user));
         setUser(data.user);

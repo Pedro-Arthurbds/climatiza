@@ -7,6 +7,7 @@ declare global {
     interface Request {
       userId?: string;
       userRole?: string;
+      mustChangePassword?: boolean;
     }
   }
 }
@@ -29,6 +30,12 @@ export async function autenticar(
     const { payload } = await jwtVerify(token, jwtSecret);
     req.userId = payload.sub as string;
     req.userRole = payload.role as string | undefined;
+    req.mustChangePassword = payload.mustChangePassword === true;
+
+    if (req.mustChangePassword && req.path !== "/first-password") {
+      return res.status(403).json({ error: "Defina sua senha antes de continuar" });
+    }
+
     next();
   } catch {
     return res.status(401).json({ error: "Token inválido ou expirado" });

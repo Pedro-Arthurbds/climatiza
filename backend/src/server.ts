@@ -30,7 +30,7 @@ app.use("/api", routes);
 app.use(errorHandler);
 
 const PORT = Number(process.env.PORT) || 3333;
-app.listen(PORT, () => {
-  console.log(`Climatiza API rodando em http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Climatiza API rodando na porta ${PORT}`);
   iniciarJobs();
 });

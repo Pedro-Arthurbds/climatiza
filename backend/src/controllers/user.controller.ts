@@ -25,6 +25,7 @@ const userSelect = {
   email: true,
   role: true,
   isActive: true,
+  mustChangePassword: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -48,7 +49,11 @@ export async function buscar(req: Request, res: Response) {
 export async function criar(req: Request, res: Response) {
   const dados = criarUserSchema.parse(req.body);
   const user = await prisma.user.create({
-    data: { ...dados, password: await hashSenha(dados.password) },
+    data: {
+      ...dados,
+      password: await hashSenha(dados.password),
+      mustChangePassword: true,
+    },
     select: userSelect,
   });
   return res.status(201).json(user);
@@ -61,6 +66,7 @@ export async function atualizar(req: Request, res: Response) {
     data: {
       ...dados,
       password: dados.password ? await hashSenha(dados.password) : undefined,
+      mustChangePassword: dados.password ? true : undefined,
     },
     select: userSelect,
   });
