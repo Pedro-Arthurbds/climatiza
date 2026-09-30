@@ -1,0 +1,65 @@
+site_name: Climatiza
+site_description: Documentação técnica e operacional do sistema Climatiza
+repo_name: climatiza-backend
+docs_dir: docs
+site_dir: site
+exclude_docs: |
+  skil.md
+
+theme:
+  name: material
+  language: pt-BR
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: orange
+      toggle:
+        icon: material/brightness-7
+        name: Alternar para tema escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: orange
+      toggle:
+        icon: material/brightness-4
+        name: Alternar para tema claro
+
+nav:
+  - Início: index.md
+  - Primeiros passos:
+      - Instalação local: getting-started.md
+      - Configuração: configuration.md
+  - Sistema:
+      - Arquitetura: architecture.md
+      - Modelo de dados: data-model.md
+      - Perfis e permissões: permissions.md
+      - Fluxos operacionais: workflows.md
+      - Interface web: frontend.md
+  - API:
+      - Referência de endpoints: api.md
+  - Operação:
+      - Hospedagem e deploy: deployment.md
+      - Segurança e limitações: security.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables
+
+strict: true

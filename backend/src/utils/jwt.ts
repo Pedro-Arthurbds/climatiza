@@ -1,6 +1,5 @@
 import { SignJWT } from "jose";
-
-const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
+import { jwtSecret } from "./jwtSecret";
 
 export async function emitirToken(userId: string, role: string) {
   return new SignJWT({ role })
@@ -8,5 +7,5 @@ export async function emitirToken(userId: string, role: string) {
     .setSubject(userId)
     .setIssuedAt()
     .setExpirationTime("8h")
-    .sign(secret);
+    .sign(jwtSecret);
 }

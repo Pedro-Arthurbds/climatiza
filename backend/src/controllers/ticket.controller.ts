@@ -89,6 +89,21 @@ function filtroPorPapel(req: Request) {
     : {};
 }
 
+async function exigirAcessoAoChamado(req: Request, ticketId: string) {
+  const ticket = await prisma.ticket.findFirst({
+    where: {
+      id: ticketId,
+      ...filtroPorPapel(req),
+    },
+  });
+
+  if (!ticket) {
+    throw new AppError("Chamado não encontrado", 404);
+  }
+
+  return ticket;
+}
+
 export async function listar(req: Request, res: Response) {
   const { status, userId } = req.query;
 
@@ -105,8 +120,9 @@ export async function listar(req: Request, res: Response) {
 }
 
 export async function buscar(req: Request, res: Response) {
+  const ticketAcessivel = await exigirAcessoAoChamado(req, req.params.id);
   const ticket = await prisma.ticket.findUniqueOrThrow({
-    where: { id: req.params.id },
+    where: { id: ticketAcessivel.id },
     include: includeDetalhe,
   });
 
@@ -392,8 +408,9 @@ export async function remover(req: Request, res: Response) {
 
 export async function criarNota(req: Request, res: Response) {
   const { content } = notaSchema.parse(req.body);
+  const ticket = await exigirAcessoAoChamado(req, req.params.id);
   const nota = await prisma.ticketNote.create({
-    data: { ticketId: req.params.id, userId: req.userId, content },
+    data: { ticketId: ticket.id, userId: req.userId, content },
     include: { user: { select: { id: true, name: true } } },
   });
   return res.status(201).json(nota);
@@ -403,6 +420,11 @@ export async function removerNota(req: Request, res: Response) {
   const nota = await prisma.ticketNote.findUniqueOrThrow({
     where: { id: req.params.notaId },
   });
+
+  if (nota.ticketId !== req.params.id) {
+    throw new AppError("Observação não encontrada neste chamado", 404);
+  }
+  await exigirAcessoAoChamado(req, nota.ticketId);
 
   // Técnico só apaga a própria observação; admin apaga qualquer uma.
   if (req.userRole === "TECNICO" && nota.userId !== req.userId) {
@@ -417,8 +439,9 @@ export async function removerNota(req: Request, res: Response) {
 
 export async function criarAnexo(req: Request, res: Response) {
   const dados = anexoSchema.parse(req.body);
+  const ticket = await exigirAcessoAoChamado(req, req.params.id);
   const anexo = await prisma.ticketAttachment.create({
-    data: { ...dados, ticketId: req.params.id, uploadedById: req.userId },
+    data: { ...dados, ticketId: ticket.id, uploadedById: req.userId },
     include: { uploadedBy: { select: { id: true, name: true } } },
   });
   return res.status(201).json(anexo);

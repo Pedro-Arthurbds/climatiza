@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { jwtVerify } from "jose";
-
-const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
+import { jwtSecret } from "../utils/jwtSecret";
 
 declare global {
   namespace Express {
@@ -27,7 +26,7 @@ export async function autenticar(
   }
 
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, jwtSecret);
     req.userId = payload.sub as string;
     req.userRole = payload.role as string | undefined;
     next();
