@@ -5,7 +5,7 @@ import { hashSenha } from "../src/utils/hash";
 
 const credenciais = z.object({
   email: z.string().email(),
-  senha: z.string().min(16),
+  senha: z.string().min(8),
 }).safeParse({
   email: process.env.SEED_ADMIN_EMAIL,
   senha: process.env.SEED_ADMIN_PASSWORD,
