@@ -148,6 +148,7 @@ export function ChamadoDrawer({
   );
   const [erro, setErro] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   async function carregar() {
     const { data } = await api.get<ChamadoDetalhe>(`/chamados/${chamadoId}`);
@@ -166,6 +167,30 @@ export function ChamadoDrawer({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chamadoId]);
+
+  // O endpoint exige o token no header, então não dá pra usar um <a href>
+  // simples: baixa como blob pelo axios e dispara o download no navegador.
+  async function baixarRelatorio() {
+    setErro(null);
+    setGerandoPdf(true);
+    try {
+      const { data } = await api.get<Blob>(`/chamados/${chamadoId}/relatorio`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chamado-${chamadoId.slice(-8).toUpperCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setErro("Não foi possível gerar o relatório em PDF.");
+    } finally {
+      setGerandoPdf(false);
+    }
+  }
 
   async function executar(fn: () => Promise<unknown>) {
     setErro(null);
@@ -205,12 +230,21 @@ export function ChamadoDrawer({
           </h2>
           <p className="text-sm text-inkMuted">{chamado.serviceType.name}</p>
         </div>
-        <button
-          onClick={onFechar}
-          className="rounded-md px-2 py-1 text-sm text-inkMuted hover:bg-surfaceAlt hover:text-ink"
-        >
-          Fechar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={baixarRelatorio}
+            disabled={gerandoPdf}
+            className="rounded-md border border-border px-3 py-1 text-sm font-medium text-accent hover:bg-surfaceAlt disabled:opacity-60"
+          >
+            {gerandoPdf ? "Gerando..." : "Baixar PDF"}
+          </button>
+          <button
+            onClick={onFechar}
+            className="rounded-md px-2 py-1 text-sm text-inkMuted hover:bg-surfaceAlt hover:text-ink"
+          >
+            Fechar
+          </button>
+        </div>
       </div>
 
       {erro && (

@@ -10,6 +10,7 @@ import {
   criarNota,
   listar,
   reagendar,
+  relatorio,
   remover,
   removerAnexo,
   removerNota,
@@ -26,6 +27,7 @@ router.get("/agenda", asyncHandler(agenda));
 
 router.get("/", asyncHandler(listar));
 router.get("/:id", asyncHandler(buscar));
+router.get("/:id/relatorio", asyncHandler(relatorio));
 
 router.post("/", exigirAdmin, asyncHandler(criar));
 router.patch("/:id", exigirAdmin, asyncHandler(atualizar));

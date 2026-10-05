@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { ChamadoDrawer } from "../components/ChamadoDrawer";
+import { HistoricoCliente } from "../components/HistoricoCliente";
 import type { Cliente } from "../types";
 
 const enderecoVazio = {
@@ -22,6 +24,11 @@ export function Clientes() {
   const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [mensagemErro, setMensagemErro] = useState<string | null>(null);
+
+  // Histórico de chamados do cliente clicado + chamado aberto a partir dele.
+  const [clienteHistorico, setClienteHistorico] = useState<Cliente | null>(null);
+  const [chamadoAberto, setChamadoAberto] = useState<string | null>(null);
+  const [versaoHistorico, setVersaoHistorico] = useState(0);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -333,9 +340,21 @@ export function Clientes() {
         {!carregando && !erroCarregamento && clientesFiltrados.length > 0 && (
           <div className="divide-y divide-border md:hidden">
             {clientesFiltrados.map((cliente) => (
-              <article key={cliente.id} className="flex items-start justify-between gap-3 p-4">
+              <article
+                key={cliente.id}
+                onClick={() => setClienteHistorico(cliente)}
+                className="flex cursor-pointer items-start justify-between gap-3 p-4 hover:bg-[#f8f1e6]"
+              >
                 <div className="min-w-0">
-                  <h3 className="break-words font-semibold text-ink">{cliente.name}</h3>
+                  <h3 className="break-words font-semibold text-ink">
+                    <button
+                      type="button"
+                      onClick={() => setClienteHistorico(cliente)}
+                      className="text-left hover:underline"
+                    >
+                      {cliente.name}
+                    </button>
+                  </h3>
                   <p className="mt-1 break-all text-sm text-inkMuted">{cliente.email}</p>
                   <p className="mt-1 text-sm text-inkMuted">{cliente.phone}</p>
                   <p className="mt-2 text-xs text-inkMuted">
@@ -350,7 +369,10 @@ export function Clientes() {
                 {user?.role === "ADMIN" && (
                   <button
                     type="button"
-                    onClick={() => abrirFormulario(cliente)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      abrirFormulario(cliente);
+                    }}
                     className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-[#2f4f48]"
                   >
                     Editar
@@ -375,8 +397,20 @@ export function Clientes() {
           </thead>
           <tbody>
             {clientesFiltrados.map((c) => (
-              <tr key={c.id} className="border-t border-border transition hover:bg-[#f8f1e6]">
-                <td className="px-4 py-3 font-semibold text-ink">{c.name}</td>
+              <tr
+                key={c.id}
+                onClick={() => setClienteHistorico(c)}
+                className="cursor-pointer border-t border-border transition hover:bg-[#f8f1e6]"
+              >
+                <td className="px-4 py-3 font-semibold text-ink">
+                  <button
+                    type="button"
+                    onClick={() => setClienteHistorico(c)}
+                    className="text-left hover:underline"
+                  >
+                    {c.name}
+                  </button>
+                </td>
                 <td className="px-4 py-3 text-inkMuted">
                   <p>{c.email}</p>
                   <p className="mt-1">{c.phone}</p>
@@ -389,7 +423,10 @@ export function Clientes() {
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => abrirFormulario(c)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        abrirFormulario(c);
+                      }}
                       className="text-xs font-semibold text-[#2f4f48] hover:underline"
                     >
                       Editar
@@ -403,6 +440,24 @@ export function Clientes() {
           </div>
         )}
       </section>
+
+      {clienteHistorico && (
+        <HistoricoCliente
+          cliente={clienteHistorico}
+          versao={versaoHistorico}
+          onAbrirChamado={setChamadoAberto}
+          onFechar={() => setClienteHistorico(null)}
+        />
+      )}
+
+      {/* Renderizado depois do histórico para abrir por cima dele. */}
+      {chamadoAberto && (
+        <ChamadoDrawer
+          chamadoId={chamadoAberto}
+          onFechar={() => setChamadoAberto(null)}
+          onMudou={() => setVersaoHistorico((v) => v + 1)}
+        />
+      )}
     </div>
   );
 }

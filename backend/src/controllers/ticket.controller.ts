@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { AppError } from "../middlewares/errorHandler";
 import { diffCampos, registrarAuditoria } from "../utils/audit";
 import { registrarNotificacao } from "../services/notificacoes";
+import { gerarRelatorioChamadoPdf } from "../services/relatorioChamado";
 
 const criarTicketSchema = z.object({
   clientId: z.string().min(1),
@@ -105,13 +106,16 @@ async function exigirAcessoAoChamado(req: Request, ticketId: string) {
 }
 
 export async function listar(req: Request, res: Response) {
-  const { status, userId } = req.query;
+  const { status, userId, clientId } = req.query;
 
   const tickets = await prisma.ticket.findMany({
     where: {
       ...filtroPorPapel(req),
       status: typeof status === "string" ? (status as never) : undefined,
       userId: typeof userId === "string" ? userId : undefined,
+      // Histórico do cliente: mantém filtroPorPapel, então o técnico só vê
+      // os chamados do cliente que ele já poderia ver na lista geral.
+      clientId: typeof clientId === "string" ? clientId : undefined,
     },
     include,
     orderBy: { createdAt: "desc" },
@@ -450,6 +454,54 @@ export async function criarAnexo(req: Request, res: Response) {
 export async function removerAnexo(req: Request, res: Response) {
   await prisma.ticketAttachment.delete({ where: { id: (req.params.anexoId as string) } });
   return res.status(204).send();
+}
+
+// --- Relatório em PDF ---
+
+// Mesmo id fixo usado em company.controller.ts (registro único da empresa).
+const COMPANY_SINGLETON_ID = "company-default";
+
+// GET /chamados/:id/relatorio[?notas=false]
+// Reaproveita a regra de acesso dos demais endpoints (técnico só acessa
+// chamado próprio ou sem responsável). `notas=false` omite as observações
+// internas — útil quando o PDF vai ser entregue ao cliente.
+export async function relatorio(req: Request, res: Response) {
+  const acessivel = await exigirAcessoAoChamado(req, (req.params.id as string));
+
+  const [ticket, auditLog, empresa, usuario] = await Promise.all([
+    prisma.ticket.findUniqueOrThrow({
+      where: { id: acessivel.id },
+      include: includeDetalhe,
+    }),
+    prisma.auditLog.findMany({
+      where: { entityType: "Ticket", entityId: acessivel.id },
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.company.findUnique({ where: { id: COMPANY_SINGLETON_ID } }),
+    prisma.user.findUnique({
+      where: { id: req.userId as string },
+      select: { name: true },
+    }),
+  ]);
+
+  const protocolo = ticket.id.slice(-8).toUpperCase();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="chamado-${protocolo}.pdf"`
+  );
+
+  gerarRelatorioChamadoPdf(
+    {
+      empresa,
+      ticket,
+      auditLog,
+      geradoPor: usuario?.name ?? "Sistema",
+      incluirNotas: req.query.notas !== "false",
+    },
+    res
+  );
 }
 
 // --- Agenda ---
