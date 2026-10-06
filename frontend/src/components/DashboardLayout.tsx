@@ -69,7 +69,7 @@ export function DashboardLayout() {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3">
         {links
           .filter((link) => user && link.roles.includes(user.role))
           .map((link) => (
@@ -102,7 +102,7 @@ export function DashboardLayout() {
   );
 
   return (
-    <div className="app-shell min-h-screen">
+    <div className="app-shell min-h-screen lg:h-dvh lg:min-h-0 lg:overflow-hidden">
       <a
         href="#app-main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-base"
@@ -110,7 +110,9 @@ export function DashboardLayout() {
         Pular para o conteúdo principal
       </a>
 
-      <aside className="sidebar-panel">{navContent}</aside>
+      <aside className="sidebar-panel lg:sticky lg:top-0 lg:h-dvh">
+        {navContent}
+      </aside>
 
       <div
         className={`mobile-drawer-backdrop ${mobileMenuAberto ? 'is-open' : ''}`}
@@ -125,7 +127,11 @@ export function DashboardLayout() {
         {navContent}
       </aside>
 
-      <main id="app-main-content" tabIndex={-1} className="flex-1 overflow-y-auto outline-none bg-[#f6f1e8]">
+      <main
+        id="app-main-content"
+        tabIndex={-1}
+        className="min-w-0 flex-1 overflow-y-auto outline-none bg-[#f6f1e8] lg:h-dvh lg:min-h-0"
+      >
         <header className="sticky top-0 z-10 border-b border-border/80 bg-[#f7f3eb]/90 backdrop-blur-xl">
           <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
