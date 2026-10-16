@@ -1,8 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type { TipoServico } from "../types";
 
 export function TiposServico() {
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const [tipos, setTipos] = useState<TipoServico[]>([]);
   const [nome, setNome] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -82,7 +86,7 @@ export function TiposServico() {
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[24px] border border-border bg-[#fffdf9] p-5 shadow-panel sm:flex-row">
+      {!somenteLeitura && <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[24px] border border-border bg-[#fffdf9] p-5 shadow-panel sm:flex-row">
         <input
           value={nome}
           onChange={(e) => setNome(e.target.value)}
@@ -92,7 +96,7 @@ export function TiposServico() {
         <button type="submit" className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] hover:bg-[#24413d]">
           Adicionar
         </button>
-      </form>
+      </form>}
 
       <div className="overflow-hidden rounded-[20px] border border-border bg-[#fffdf9] shadow-panel">
         <table className="w-full text-left text-sm">
@@ -113,13 +117,13 @@ export function TiposServico() {
                   <div className="flex flex-col items-center gap-2">
                     <p className="text-base font-medium text-ink">Nenhum tipo de serviço cadastrado.</p>
                     <p className="text-sm">Adicione o primeiro item para começar a operação.</p>
-                    <button
+                    {!somenteLeitura && <button
                       type="button"
                       onClick={() => setNome("Manutenção preventiva")}
                       className="mt-2 rounded-xl bg-[#2f4f48] px-3 py-2 text-xs font-semibold text-[#f9f5f0]"
                     >
                       Criar primeiro tipo
-                    </button>
+                    </button>}
                   </div>
                 </td>
               </tr>
@@ -129,9 +133,9 @@ export function TiposServico() {
                 <td className="px-4 py-3 font-semibold text-ink">{t.name}</td>
                 <td className="px-4 py-3 text-inkMuted">{t.isActive ? "Ativo" : "Inativo"}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => alternarAtivo(t)} className="text-xs font-semibold text-[#2f4f48] hover:underline">
+                  {!somenteLeitura && <button onClick={() => alternarAtivo(t)} className="text-xs font-semibold text-[#2f4f48] hover:underline">
                     {t.isActive ? "Desativar" : "Reativar"}
-                  </button>
+                  </button>}
                 </td>
               </tr>
             ))}

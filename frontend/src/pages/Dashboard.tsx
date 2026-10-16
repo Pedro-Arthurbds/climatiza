@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api/client";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type {
   AlertaManutencao,
   DashboardResumo,
@@ -23,6 +24,9 @@ const mesAbreviado = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const [resumo, setResumo] = useState<DashboardResumo | null>(null);
   const [tecnicos, setTecnicos] = useState<TecnicoCarga[]>([]);
   const [grafico, setGrafico] = useState<GraficoDashboard | null>(null);
@@ -123,13 +127,13 @@ export function Dashboard() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-inkMuted">Panorama</p>
             <p className="mt-1 text-base font-semibold text-ink">Resumo semanal</p>
           </div>
-          <button
+          {!somenteLeitura && <button
             type="button"
             onClick={() => setMostrarPanorama((valor) => !valor)}
             className="rounded-full border border-border bg-surfaceAlt px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-inkMuted"
           >
             {mostrarPanorama ? "Ocultar" : "Ver"}
-          </button>
+          </button>}
         </div>
 
         {!mostrarPanorama && (

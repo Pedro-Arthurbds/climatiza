@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { ChamadoDrawer } from "../components/ChamadoDrawer";
 import { useAuth } from "../context/AuthContext";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type { ChamadoAgenda, TicketStatus, TipoServico, Usuario } from "../types";
 
 type Visao = "dia" | "semana" | "mes";
@@ -65,6 +66,9 @@ function chaveDia(d: Date | string) {
 export function Agenda() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const ehAdmin = user?.role === "ADMIN";
 
   const [visao, setVisao] = useState<Visao>("semana");
@@ -125,6 +129,7 @@ export function Agenda() {
   // Reagendamento por arrastar: mantém o horário original e troca só o dia,
   // que é o comportamento esperado ao mover um card entre datas.
   async function soltarEm(chamadoId: string, dia: Date) {
+    if (somenteLeitura) return;
     const chamado = chamados.find((c) => c.id === chamadoId);
     if (!chamado?.scheduledAt) return;
 
@@ -351,6 +356,7 @@ export function Agenda() {
           agrupado={!filtroTecnico}
           aoAbrir={setSelecionado}
           aoSoltar={soltarEm}
+          somenteLeitura={somenteLeitura}
         />
       )}
 
@@ -374,6 +380,7 @@ export function Agenda() {
                 chamados={porDia.get(chaveDia(dia)) ?? []}
                 aoAbrir={setSelecionado}
                 aoSoltar={soltarEm}
+                somenteLeitura={somenteLeitura}
               />
             ))}
           </div>
@@ -398,6 +405,7 @@ function CelulaDia({
   chamados,
   aoAbrir,
   aoSoltar,
+  somenteLeitura,
 }: {
   dia: Date;
   mesReferencia: number;
@@ -405,6 +413,7 @@ function CelulaDia({
   chamados: ChamadoAgenda[];
   aoAbrir: (id: string) => void;
   aoSoltar: (id: string, dia: Date) => void;
+  somenteLeitura: boolean;
 }) {
   const [sobre, setSobre] = useState(false);
   const foraDoMes = destacarMes && dia.getMonth() !== mesReferencia;
@@ -436,7 +445,12 @@ function CelulaDia({
       </p>
       <div className="flex flex-col gap-1">
         {chamados.map((c) => (
-          <CardChamado key={c.id} chamado={c} aoAbrir={aoAbrir} />
+          <CardChamado
+            key={c.id}
+            chamado={c}
+            aoAbrir={aoAbrir}
+            somenteLeitura={somenteLeitura}
+          />
         ))}
       </div>
     </div>
@@ -449,12 +463,14 @@ function ColunaDia({
   agrupado,
   aoAbrir,
   aoSoltar,
+  somenteLeitura,
 }: {
   dia: Date;
   chamados: ChamadoAgenda[];
   agrupado: boolean;
   aoAbrir: (id: string) => void;
   aoSoltar: (id: string, dia: Date) => void;
+  somenteLeitura: boolean;
 }) {
   // Na visão de dia, agrupar por técnico é o que dá leitura de carga.
   const grupos = useMemo(() => {
@@ -490,7 +506,13 @@ function ColunaDia({
           </p>
           <div className="flex flex-col gap-2">
             {g.itens.map((c) => (
-              <CardChamado key={c.id} chamado={c} aoAbrir={aoAbrir} detalhado />
+              <CardChamado
+                key={c.id}
+                chamado={c}
+                aoAbrir={aoAbrir}
+                detalhado
+                somenteLeitura={somenteLeitura}
+              />
             ))}
           </div>
         </div>
@@ -503,10 +525,12 @@ function CardChamado({
   chamado,
   aoAbrir,
   detalhado,
+  somenteLeitura,
 }: {
   chamado: ChamadoAgenda;
   aoAbrir: (id: string) => void;
   detalhado?: boolean;
+  somenteLeitura: boolean;
 }) {
   const hora = chamado.scheduledAt
     ? new Date(chamado.scheduledAt).toLocaleTimeString("pt-BR", {
@@ -523,10 +547,10 @@ function CardChamado({
 
   return (
     <button
-      draggable
+      draggable={!somenteLeitura}
       onDragStart={(e) => e.dataTransfer.setData("text/plain", chamado.id)}
       onClick={() => aoAbrir(chamado.id)}
-      className={`w-full cursor-grab rounded border p-2 text-left text-xs active:cursor-grabbing ${borda}`}
+      className={`w-full rounded border p-2 text-left text-xs ${somenteLeitura ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"} ${borda}`}
     >
       <p className="font-semibold">
         {hora} {chamado.client.name}

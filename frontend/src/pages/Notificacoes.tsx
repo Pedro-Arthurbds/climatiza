@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type { Notificacao, TipoNotificacao } from "../types";
 
 const rotuloTipo: Record<TipoNotificacao, string> = {
@@ -25,6 +26,9 @@ function formatarData(valor: string) {
 
 export function Notificacoes() {
   const { user } = useAuth();
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const ehAdmin = user?.role === "ADMIN";
 
   const [aba, setAba] = useState<"pendentes" | "resolvidas">("pendentes");
@@ -104,7 +108,7 @@ export function Notificacoes() {
           </p>
         </div>
 
-        {ehAdmin && (
+        {ehAdmin && !somenteLeitura && (
           <button
             onClick={verificarAgora}
             disabled={verificando}
@@ -167,7 +171,7 @@ export function Notificacoes() {
                   {n.client.name} · {formatarData(n.createdAt)}
                 </p>
               </div>
-              {!n.resolution && (
+              {!n.resolution && !somenteLeitura && (
                 <button
                   onClick={() => resolver(n.id)}
                   disabled={resolvendoId === n.id}

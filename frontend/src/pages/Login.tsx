@@ -19,8 +19,15 @@ export function Login() {
     try {
       await login(email, password);
       navigate("/", { replace: true });
-    } catch {
-      setErro("E-mail ou senha inválidos.");
+    } catch (error) {
+      const resposta = (
+        error as { response?: { status?: number; data?: { error?: unknown } } }
+      ).response;
+      setErro(
+        resposta?.status === 402 && typeof resposta.data?.error === "string"
+          ? resposta.data.error
+          : "E-mail ou senha inválidos."
+      );
     } finally {
       setCarregando(false);
     }

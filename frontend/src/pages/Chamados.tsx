@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { ChamadoDrawer } from "../components/ChamadoDrawer";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type { Chamado, Cliente, TicketStatus, TipoServico, Usuario } from "../types";
 import {
   dataHoraBrasilParaIso,
@@ -28,6 +29,9 @@ const labelsStatus: Record<TicketStatus, string> = {
 
 export function Chamados() {
   const { user } = useAuth();
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const [searchParams, setSearchParams] = useSearchParams();
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<TicketStatus | "">("");
@@ -125,7 +129,7 @@ export function Chamados() {
           </p>
         </div>
 
-        {user?.role === "ADMIN" && (
+        {user?.role === "ADMIN" && !somenteLeitura && (
           <button
             onClick={() => setMostrarForm((v) => !v)}
             className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] shadow-[0_10px_25px_rgba(47,79,72,0.2)] transition hover:bg-[#24413d]"
@@ -154,7 +158,7 @@ export function Chamados() {
         </p>
       )}
 
-      {mostrarForm && (
+      {mostrarForm && !somenteLeitura && (
         <NovoChamadoForm
           onCriado={(mensagem) => {
             setMostrarForm(false);
@@ -265,6 +269,7 @@ export function Chamados() {
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <select
                       value={chamado.status}
+                      disabled={somenteLeitura}
                       onChange={(e) =>
                         mudarStatus(chamado.id, e.target.value as TicketStatus)
                       }

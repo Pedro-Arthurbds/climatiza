@@ -22,6 +22,16 @@ api.interceptors.response.use(
       if (!window.location.pathname.startsWith("/login")) {
         window.location.href = "/login";
       }
+    } else if (
+      error.response?.status === 402 &&
+      error.config?.url !== "/auth/login" &&
+      !window.location.pathname.startsWith("/assinatura-pendente")
+    ) {
+      const mensagem = error.response.data?.error;
+      if (typeof mensagem === "string") {
+        sessionStorage.setItem("climatiza:billing-message", mensagem);
+      }
+      window.location.href = "/assinatura-pendente";
     }
     return Promise.reject(error);
   }

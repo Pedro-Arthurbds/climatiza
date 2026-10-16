@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useAssinatura } from "../context/SubscriptionContext";
 import { ChamadoDrawer } from "../components/ChamadoDrawer";
 import { HistoricoCliente } from "../components/HistoricoCliente";
 import type { Cliente } from "../types";
@@ -16,6 +17,9 @@ const enderecoVazio = {
 
 export function Clientes() {
   const { user } = useAuth();
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
@@ -194,7 +198,7 @@ export function Clientes() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Cadastro</p>
           <h1 className="mt-2 text-3xl text-ink sm:text-4xl">Clientes</h1>
         </div>
-        {user?.role === "ADMIN" && (
+        {user?.role === "ADMIN" && !somenteLeitura && (
           <button
             type="button"
             onClick={() => {
@@ -225,7 +229,7 @@ export function Clientes() {
         </p>
       )}
 
-      {mostrarForm && (
+      {mostrarForm && !somenteLeitura && (
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 gap-4 rounded-[24px] border border-border bg-[#fffdf9] p-4 shadow-panel sm:p-6 md:grid-cols-2"
@@ -319,7 +323,7 @@ export function Clientes() {
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
             <p className="text-base font-medium text-ink">Nenhum cliente cadastrado ainda.</p>
             <p className="text-sm text-inkMuted">Cadastre o primeiro cliente para começar a operação.</p>
-            {user?.role === "ADMIN" && (
+            {user?.role === "ADMIN" && !somenteLeitura && (
               <button
                 type="button"
                 onClick={() => abrirFormulario()}
@@ -366,7 +370,7 @@ export function Clientes() {
                     </p>
                   )}
                 </div>
-                {user?.role === "ADMIN" && (
+                {user?.role === "ADMIN" && !somenteLeitura && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -419,7 +423,7 @@ export function Clientes() {
                 <td className="px-4 py-3 text-inkMuted">
                   {c.addresses.length} endereço(s)
                 </td>
-                {user?.role === "ADMIN" && (
+                {user?.role === "ADMIN" && !somenteLeitura && (
                   <td className="px-4 py-3">
                     <button
                       type="button"

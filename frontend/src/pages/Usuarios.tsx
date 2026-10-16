@@ -1,8 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type { Role, Usuario } from "../types";
 
 export function Usuarios() {
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -90,12 +94,12 @@ export function Usuarios() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Acesso</p>
           <h1 className="mt-2 text-4xl text-ink">Usuários</h1>
         </div>
-        <button
+        {!somenteLeitura && <button
           onClick={() => setMostrarForm((v) => !v)}
           className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] shadow-[0_10px_25px_rgba(47,79,72,0.2)] transition hover:bg-[#24413d]"
         >
           {mostrarForm ? "Fechar" : "Novo usuário"}
-        </button>
+        </button>}
       </div>
 
       {mensagemErro && (
@@ -110,7 +114,7 @@ export function Usuarios() {
         </p>
       )}
 
-      {mostrarForm && (
+      {mostrarForm && !somenteLeitura && (
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 rounded-[24px] border border-border bg-[#fffdf9] p-6 shadow-panel">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-inkMuted">Nome</span>
@@ -171,7 +175,7 @@ export function Usuarios() {
                 <td className="px-4 py-3 text-inkMuted">{u.role === "ADMIN" ? "Admin" : "Técnico"}</td>
                 <td className="px-4 py-3 text-inkMuted">{u.isActive ? "Ativo" : "Inativo"}</td>
                 <td className="px-4 py-3">
-                  {u.isActive && (
+                  {u.isActive && !somenteLeitura && (
                     <button onClick={() => desativar(u.id)} className="text-xs font-semibold text-[#8c3d35] hover:underline">
                       Desativar
                     </button>

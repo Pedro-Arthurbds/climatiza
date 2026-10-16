@@ -18,6 +18,7 @@ model User {
   password  String
   role      Role
   isActive  Boolean  @default(true)
+  subscriptionActive Boolean @default(true)
   mustChangePassword Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -49,6 +50,40 @@ model Company {
   maintenanceReminderDays Int @default(7)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id          String               @id @default(cuid())
+  paidUntil   DateTime             @db.Date
+  graceDays   Int                  @default(5)
+  monthlyValue Decimal?            @db.Decimal(10, 2)
+  mode        SubscriptionMode     @default(READ_ONLY)
+  cancelledAt DateTime?            @db.Date
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  payments SubscriptionPayment[]
+}
+
+model SubscriptionPayment {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  amount         Decimal      @db.Decimal(10, 2)
+  paidAt         DateTime
+  periodStart    DateTime     @db.Date
+  periodEnd      DateTime     @db.Date
+  method         String
+  externalId     String       @unique
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  @@index([subscriptionId, paidAt])
+}
+
+enum SubscriptionMode {
+  READ_ONLY
+  FULL_BLOCK
 }
 
 model Client {

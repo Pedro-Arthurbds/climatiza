@@ -1,7 +1,9 @@
 import "dotenv/config";
 import { z } from "zod";
 import { prisma } from "../src/lib/prisma";
+import { SUBSCRIPTION_SINGLETON_ID } from "../src/services/assinatura";
 import { hashSenha } from "../src/utils/hash";
+import { adicionarDias, dataAtualBrasil, dataUtc } from "../src/utils/dataBrasil";
 
 const credenciais = z.object({
   email: z.string().email(),
@@ -17,6 +19,17 @@ if (!credenciais.success) {
 
 const { email, senha } = credenciais.data;
 
+const configAssinatura = z.object({
+  monthlyValue: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.coerce.number().positive().optional()
+  ),
+  mode: z.enum(["READ_ONLY", "FULL_BLOCK"]).default("READ_ONLY"),
+}).parse({
+  monthlyValue: process.env.SEED_SUBSCRIPTION_MONTHLY_VALUE,
+  mode: process.env.SEED_SUBSCRIPTION_MODE,
+});
+
 async function main() {
   const admin = await prisma.user.upsert({
     where: { email },
@@ -26,6 +39,17 @@ async function main() {
       email,
       password: await hashSenha(senha),
       role: "ADMIN",
+    },
+  });
+
+  await prisma.subscription.upsert({
+    where: { id: SUBSCRIPTION_SINGLETON_ID },
+    update: {},
+    create: {
+      id: SUBSCRIPTION_SINGLETON_ID,
+      paidUntil: dataUtc(adicionarDias(dataAtualBrasil(), 30)),
+      monthlyValue: configAssinatura.monthlyValue,
+      mode: configAssinatura.mode,
     },
   });
 

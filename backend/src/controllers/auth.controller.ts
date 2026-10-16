@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { AppError } from "../middlewares/errorHandler";
 import { compararSenha, hashSenha } from "../utils/hash";
 import { emitirToken } from "../utils/jwt";
+import { obterEstadoAssinatura } from "../services/assinatura";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -24,6 +25,23 @@ export async function login(req: Request, res: Response) {
     throw new AppError("Credenciais inválidas", 401);
   }
 
+  if (!user.subscriptionActive) {
+    throw new AppError(
+      "A mensalidade deste usuário está vencida. Entre em contato com o responsável pelo sistema.",
+      402
+    );
+  }
+
+  if ((process.env.BILLING_ENFORCEMENT ?? "off").trim().toLowerCase() === "on") {
+    const assinatura = await obterEstadoAssinatura();
+    if (assinatura.status === "CANCELADA") {
+      throw new AppError(
+        "O contrato foi encerrado. Entre em contato para obter suporte.",
+        402
+      );
+    }
+  }
+
   const token = await emitirToken(user.id, user.role, user.mustChangePassword);
 
   return res.json({
@@ -36,6 +54,23 @@ export async function login(req: Request, res: Response) {
       mustChangePassword: user.mustChangePassword,
     },
   });
+}
+
+export async function me(req: Request, res: Response) {
+  if (!req.userId) throw new AppError("Token inválido", 401);
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      mustChangePassword: true,
+    },
+  });
+  if (!user) throw new AppError("Usuário não encontrado", 401);
+  return res.json(user);
 }
 
 const firstPasswordSchema = z.object({

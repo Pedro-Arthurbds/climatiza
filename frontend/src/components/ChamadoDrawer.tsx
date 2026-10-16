@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useAssinatura } from "../context/SubscriptionContext";
 import type {
   AuditLogEntry,
   ChamadoDetalhe,
@@ -138,6 +139,9 @@ export function ChamadoDrawer({
   onMudou?: () => void;
 }) {
   const { user } = useAuth();
+  const { assinatura } = useAssinatura();
+  const somenteLeitura =
+    assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const ehAdmin = user?.role === "ADMIN";
 
   const [chamado, setChamado] = useState<ChamadoDetalhe | null>(null);
@@ -272,14 +276,16 @@ export function ChamadoDrawer({
       <div className="flex-1 overflow-y-auto p-6">
         {aba === "detalhes" && (
           <div className="flex flex-col gap-6">
-            <AcoesRapidas
-              chamado={chamado}
-              ehAdmin={ehAdmin}
-              tecnicos={tecnicos}
-              executar={executar}
-            />
+            {!somenteLeitura && (
+              <AcoesRapidas
+                chamado={chamado}
+                ehAdmin={ehAdmin}
+                tecnicos={tecnicos}
+                executar={executar}
+              />
+            )}
 
-            {ehAdmin && (
+            {ehAdmin && !somenteLeitura && (
               <button
                 onClick={() => setEditando((v) => !v)}
                 className="self-start text-xs font-semibold text-accent hover:underline"
@@ -288,7 +294,7 @@ export function ChamadoDrawer({
               </button>
             )}
 
-            {editando && ehAdmin ? (
+            {editando && ehAdmin && !somenteLeitura ? (
               <FormEdicao
                 chamado={chamado}
                 tipos={tipos}
@@ -351,11 +357,16 @@ export function ChamadoDrawer({
         )}
 
         {aba === "notas" && (
-          <Notas chamado={chamado} executar={executar} />
+          <Notas chamado={chamado} executar={executar} somenteLeitura={somenteLeitura} />
         )}
 
         {aba === "anexos" && (
-          <Anexos chamado={chamado} ehAdmin={ehAdmin} executar={executar} />
+          <Anexos
+            chamado={chamado}
+            ehAdmin={ehAdmin}
+            executar={executar}
+            somenteLeitura={somenteLeitura}
+          />
         )}
       </div>
     </Overlay>
@@ -589,15 +600,17 @@ function FormEdicao({
 function Notas({
   chamado,
   executar,
+  somenteLeitura,
 }: {
   chamado: ChamadoDetalhe;
   executar: (fn: () => Promise<unknown>) => Promise<void>;
+  somenteLeitura: boolean;
 }) {
   const [content, setContent] = useState("");
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
+      {!somenteLeitura && <div className="flex flex-col gap-2">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -617,7 +630,7 @@ function Notas({
         >
           Adicionar
         </button>
-      </div>
+      </div>}
 
       {chamado.notes.length === 0 && (
         <p className="text-sm text-inkMuted">Nenhuma observação registrada.</p>
@@ -630,14 +643,14 @@ function Notas({
               <p className="text-xs text-inkMuted">
                 {n.user?.name ?? "—"} · {formatarDataHoraBrasil(n.createdAt)}
               </p>
-              <button
+              {!somenteLeitura && <button
                 onClick={() =>
                   executar(() => api.delete(`/chamados/${chamado.id}/notas/${n.id}`))
                 }
                 className="text-xs font-semibold text-status-cancelado hover:underline"
               >
                 Remover
-              </button>
+              </button>}
             </div>
           </li>
         ))}
@@ -650,17 +663,19 @@ function Anexos({
   chamado,
   ehAdmin,
   executar,
+  somenteLeitura,
 }: {
   chamado: ChamadoDetalhe;
   ehAdmin: boolean;
   executar: (fn: () => Promise<unknown>) => Promise<void>;
+  somenteLeitura: boolean;
 }) {
   const [filename, setFilename] = useState("");
   const [url, setUrl] = useState("");
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-md border border-border bg-surfaceAlt p-4">
+      {!somenteLeitura && <div className="rounded-md border border-border bg-surfaceAlt p-4">
         <p className="mb-3 text-xs text-inkMuted">
           Upload de arquivo ainda não está ligado — cole o link da foto ou
           documento por enquanto.
@@ -692,7 +707,7 @@ function Anexos({
             Anexar
           </button>
         </div>
-      </div>
+      </div>}
 
       {chamado.attachments.length === 0 && (
         <p className="text-sm text-inkMuted">Nenhum anexo.</p>
@@ -716,7 +731,7 @@ function Anexos({
                 {a.uploadedBy?.name ?? "—"} · {formatarDataHoraBrasil(a.createdAt)}
               </p>
             </div>
-            {ehAdmin && (
+            {ehAdmin && !somenteLeitura && (
               <button
                 onClick={() =>
                   executar(() => api.delete(`/chamados/${chamado.id}/anexos/${a.id}`))

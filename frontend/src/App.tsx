@@ -2,6 +2,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
+import { AssinaturaPendente } from "./pages/AssinaturaPendente";
+import { AssinaturaAdmin } from "./pages/AssinaturaAdmin";
 import { Agenda } from "./pages/Agenda";
 import { Chamados } from "./pages/Chamados";
 import { Clientes } from "./pages/Clientes";
@@ -15,30 +18,34 @@ import { Usuarios } from "./pages/Usuarios";
 export function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
+      <SubscriptionProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
-        <Route element={<ProtectedRoute allowPasswordChange />}>
-          <Route path="/definir-senha" element={<DefinirSenha />} />
-        </Route>
+          <Route element={<ProtectedRoute allowPasswordChange />}>
+            <Route path="/definir-senha" element={<DefinirSenha />} />
+            <Route path="/assinatura-pendente" element={<AssinaturaPendente />} />
+          </Route>
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/chamados" element={<Chamados />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/notificacoes" element={<Notificacoes />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/chamados" element={<Chamados />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/notificacoes" element={<Notificacoes />} />
+              <Route path="/admin/assinatura" element={<AssinaturaAdmin />} />
 
-            <Route element={<ProtectedRoute allow={["ADMIN"]} />}>
-              <Route path="/tipos-servico" element={<TiposServico />} />
-              <Route path="/usuarios" element={<Usuarios />} />
+              <Route element={<ProtectedRoute allow={["ADMIN"]} />}>
+                <Route path="/tipos-servico" element={<TiposServico />} />
+                <Route path="/usuarios" element={<Usuarios />} />
+              </Route>
             </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

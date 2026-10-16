@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { BannerAssinatura } from "./BannerAssinatura";
+import { useAssinatura } from "../context/SubscriptionContext";
 
 const links = [
   { to: "/", label: "Dashboard", roles: ["ADMIN", "TECNICO"] },
@@ -20,6 +22,7 @@ const INTERVALO_POLL_MS = 60_000;
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
+  const { assinatura } = useAssinatura();
   const [pendentes, setPendentes] = useState(0);
   const [mobileMenuAberto, setMobileMenuAberto] = useState(false);
 
@@ -88,6 +91,15 @@ export function DashboardLayout() {
               )}
             </NavLink>
           ))}
+        {assinatura?.canManage && (
+          <NavLink
+            to="/admin/assinatura"
+            onClick={() => setMobileMenuAberto(false)}
+            className={({ isActive }) => `nav-item ${isActive ? "nav-item-active" : ""}`}
+          >
+            <span>Mensalidade</span>
+          </NavLink>
+        )}
       </nav>
 
       <div className="border-t border-[#3f5653] p-3">
@@ -132,6 +144,7 @@ export function DashboardLayout() {
         tabIndex={-1}
         className="min-w-0 flex-1 overflow-y-auto outline-none bg-[#f6f1e8] lg:h-dvh lg:min-h-0"
       >
+        <BannerAssinatura />
         <header className="sticky top-0 z-10 border-b border-border/80 bg-[#f7f3eb]/90 backdrop-blur-xl">
           <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
