@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useAssinatura } from "../context/SubscriptionContext";
+import { useResponsivePageSize } from "../hooks/useResponsivePageSize";
 import type { Notificacao, TipoNotificacao } from "../types";
 
 const rotuloTipo: Record<TipoNotificacao, string> = {
@@ -25,6 +27,7 @@ function formatarData(valor: string) {
 }
 
 export function Notificacoes() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { assinatura } = useAssinatura();
   const somenteLeitura =
@@ -33,6 +36,9 @@ export function Notificacoes() {
 
   const [aba, setAba] = useState<"pendentes" | "resolvidas">("pendentes");
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const pageSize = useResponsivePageSize(() => setPagina(1));
+  const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [verificando, setVerificando] = useState(false);
   const [resolvendoId, setResolvendoId] = useState<string | null>(null);
@@ -43,13 +49,16 @@ export function Notificacoes() {
     setCarregando(true);
     setMensagemErro(null);
     try {
-      const { data } = await api.get<Notificacao[]>('/notificacoes', {
-        params: { resolution: aba === 'resolvidas' },
+      const { data } = await api.get<{
+        items: Notificacao[];
+        total: number;
+      }>('/notificacoes', {
+        params: { resolution: aba === 'resolvidas', page: pagina, pageSize },
       });
-      setNotificacoes(data.filter((item) =>
-        item.type !== "MANUTENCAO_VENCIDA" &&
-        (item.type !== "LEMBRETE_MANUTENCAO" || item.message.startsWith("Retorno preventivo previsto para"))
-      ));
+      setNotificacoes(data.items);
+      setTotal(data.total);
+      const ultimaPagina = Math.max(1, Math.ceil(data.total / pageSize));
+      if (pagina > ultimaPagina) setPagina(ultimaPagina);
     } catch {
       setMensagemErro('Não foi possível carregar as notificações neste momento.');
     } finally {
@@ -60,7 +69,9 @@ export function Notificacoes() {
   useEffect(() => {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aba]);
+  }, [aba, pageSize, pagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / pageSize));
 
   async function resolver(id: string) {
     const item = notificacoes.find((n) => n.id === id);
@@ -104,7 +115,7 @@ export function Notificacoes() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Comunicação</p>
           <h1 className="mt-2 text-4xl text-ink">Notificações</h1>
           <p className="mt-2 text-sm text-inkMuted">
-            Agendamentos, técnicos atribuídos, conclusões e manutenções.
+            Avisos internos sobre agendamentos, técnicos, conclusões e manutenções; não são enviados ao cliente.
           </p>
         </div>
 
@@ -136,7 +147,10 @@ export function Notificacoes() {
           {(["pendentes", "resolvidas"] as const).map((a) => (
             <button
               key={a}
-              onClick={() => setAba(a)}
+              onClick={() => {
+                setAba(a);
+                setPagina(1);
+              }}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold capitalize ${
                 aba === a ? "border-[#2f4f48] bg-[#2f4f48] text-[#f7f2ea]" : "border-border bg-surfaceAlt text-inkMuted"
               }`}
@@ -170,8 +184,17 @@ export function Notificacoes() {
                 <p className="mt-1 text-xs text-inkMuted">
                   {n.client.name} · {formatarData(n.createdAt)}
                 </p>
+                {n.ticketId && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/chamados?ticket=${encodeURIComponent(n.ticketId!)}`)}
+                    className="mt-2 text-xs font-semibold text-accent hover:underline"
+                  >
+                    Abrir chamado
+                  </button>
+                )}
               </div>
-              {!n.resolution && !somenteLeitura && (
+              {!n.resolution && ehAdmin && !somenteLeitura && (
                 <button
                   onClick={() => resolver(n.id)}
                   disabled={resolvendoId === n.id}
@@ -183,6 +206,31 @@ export function Notificacoes() {
             </div>
           ))}
         </div>
+        {total > pageSize && (
+          <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-sm">
+            <span className="text-inkMuted">
+              Página {pagina} de {totalPaginas} · {total} notificações
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
+                disabled={pagina === 1 || carregando}
+                className="rounded-lg border border-border px-3 py-1.5 font-semibold text-inkMuted disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setPagina((atual) => Math.min(totalPaginas, atual + 1))}
+                disabled={pagina >= totalPaginas || carregando}
+                className="rounded-lg border border-border px-3 py-1.5 font-semibold text-inkMuted disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

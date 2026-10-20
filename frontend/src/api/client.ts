@@ -1,5 +1,7 @@
 import axios from "axios";
 
+export const NOTIFICATION_CHANGE_EVENT = "climatiza:notifications-changed";
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3333/api",
 });
@@ -14,7 +16,24 @@ api.interceptors.request.use((config) => {
 
 // Token expirado/inválido: derruba a sessão local e manda pro login.
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const method = response.config.method?.toLowerCase();
+    if (method && method !== "get" && method !== "head") {
+      const requestUrl = new URL(
+        response.config.url ?? "",
+        response.config.baseURL ?? window.location.origin
+      ).pathname;
+      const alteraNotificacoes =
+        /\/chamados(?:\/[^/]+)?(?:\/(?:status|atribuir|reagendar))?$/.test(requestUrl) ||
+        /\/notificacoes(?:\/[^/]+\/resolver)?$/.test(requestUrl) ||
+        /\/dashboard\/verificar-manutencoes$/.test(requestUrl);
+
+      if (alteraNotificacoes) {
+        window.dispatchEvent(new Event(NOTIFICATION_CHANGE_EVENT));
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("climatiza:token");

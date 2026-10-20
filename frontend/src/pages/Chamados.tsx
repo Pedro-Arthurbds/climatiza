@@ -1,11 +1,12 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { ChamadoDrawer } from "../components/ChamadoDrawer";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { useAssinatura } from "../context/SubscriptionContext";
-import type { Chamado, Cliente, TicketStatus, TipoServico, Usuario } from "../types";
+import { useResponsivePageSize } from "../hooks/useResponsivePageSize";
+import type { Chamado, Cliente, Endereco, TicketStatus, TipoServico, Usuario } from "../types";
 import {
   dataHoraBrasilParaIso,
   formatarDataHoraBrasil,
@@ -27,6 +28,10 @@ const labelsStatus: Record<TicketStatus, string> = {
   CANCELADO: "Cancelado",
 };
 
+type ClienteOpcao = Pick<Cliente, "id" | "name" | "email"> & {
+  addresses: Pick<Endereco, "id" | "street" | "number" | "city">[];
+};
+
 export function Chamados() {
   const { user } = useAuth();
   const { assinatura } = useAssinatura();
@@ -34,6 +39,15 @@ export function Chamados() {
     assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
   const [searchParams, setSearchParams] = useSearchParams();
   const [chamados, setChamados] = useState<Chamado[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const pageSize = useResponsivePageSize(() => setPagina(1));
+  const [total, setTotal] = useState(0);
+  const [resumo, setResumo] = useState({
+    total: 0,
+    abertos: 0,
+    andamento: 0,
+    atrasados: 0,
+  });
   const [filtroStatus, setFiltroStatus] = useState<TicketStatus | "">("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -41,49 +55,52 @@ export function Chamados() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [selecionado, setSelecionado] = useState<string | null>(null);
 
-  const resumo = useMemo(() => {
-    const hoje = new Date();
-    const total = chamados.length;
-    const abertos = chamados.filter((item) => item.status === "ABERTO").length;
-    const andamento = chamados.filter((item) => item.status === "EM_ANDAMENTO").length;
-    const atrasados = chamados.filter((item) => {
-      if (!item.scheduledAt || item.status === "CONCLUIDO" || item.status === "CANCELADO") return false;
-      const data = new Date(item.scheduledAt);
-      return data < hoje;
-    }).length;
-    const agendadosHoje = chamados.filter((item) => {
-      if (!item.scheduledAt) return false;
-      const data = new Date(item.scheduledAt);
-      return data.toDateString() === hoje.toDateString();
-    }).length;
-
-    return { total, abertos, andamento, atrasados, agendadosHoje };
-  }, [chamados]);
-
   function limparFiltros() {
     setFiltroStatus("");
+    setPagina(1);
     setSucesso(null);
   }
 
-  async function carregar() {
+  async function carregar(signal?: AbortSignal) {
     setCarregando(true);
     setErro(null);
     try {
-      const { data } = await api.get<Chamado[]>("/chamados", {
-        params: filtroStatus ? { status: filtroStatus } : undefined,
+      const { data } = await api.get<{
+        items: Chamado[];
+        page: number;
+        pageSize: number;
+        total: number;
+        resumo: typeof resumo;
+      }>("/chamados", {
+        params: {
+          status: filtroStatus || undefined,
+          page: pagina,
+          pageSize,
+        },
+        signal,
       });
-      setChamados(data);
+      setChamados(data.items);
+      setTotal(data.total);
+      setResumo(data.resumo);
+      if (data.items.length === 0 && pagina > 1) {
+        setPagina((atual) => Math.max(1, atual - 1));
+      }
     } catch {
+      if (signal?.aborted) return;
       setErro("Não foi possível carregar os chamados. Tente novamente.");
     } finally {
-      setCarregando(false);
+      if (!signal?.aborted) setCarregando(false);
     }
   }
 
   useEffect(() => {
-    carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroStatus]);
+  }, [filtroStatus, pageSize, pagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / pageSize));
 
   useEffect(() => {
     const ticketId = searchParams.get("ticket");
@@ -163,7 +180,11 @@ export function Chamados() {
           onCriado={(mensagem) => {
             setMostrarForm(false);
             setSucesso(mensagem ?? "Chamado aberto com sucesso.");
-            carregar();
+            if (pagina === 1) {
+              carregar();
+            } else {
+              setPagina(1);
+            }
           }}
         />
       )}
@@ -171,7 +192,10 @@ export function Chamados() {
       <div className="rounded-[24px] border border-border bg-[#fffdf9] p-4 shadow-panel">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setFiltroStatus("")}
+            onClick={() => {
+              setFiltroStatus("");
+              setPagina(1);
+            }}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
               filtroStatus === ""
                 ? "border-[#2f4f48] bg-[#2f4f48] text-[#f7f2ea]"
@@ -183,7 +207,10 @@ export function Chamados() {
           {statusOptions.map((s) => (
             <button
               key={s}
-              onClick={() => setFiltroStatus(s)}
+              onClick={() => {
+                setFiltroStatus(s);
+                setPagina(1);
+              }}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
                 filtroStatus === s
                   ? "border-[#2f4f48] bg-[#2f4f48] text-[#f7f2ea]"
@@ -287,6 +314,31 @@ export function Chamados() {
             </tbody>
           </table>
         </div>
+        {total > pageSize && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+            <span className="text-inkMuted">
+              Página {pagina} de {totalPaginas} · {total} chamados
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
+                disabled={pagina === 1 || carregando}
+                className="rounded-lg border border-border px-3 py-1.5 font-semibold text-inkMuted disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setPagina((atual) => Math.min(totalPaginas, atual + 1))}
+                disabled={pagina >= totalPaginas || carregando}
+                className="rounded-lg border border-border px-3 py-1.5 font-semibold text-inkMuted disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {selecionado && (
@@ -301,7 +353,8 @@ export function Chamados() {
 }
 
 function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }) {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clientes, setClientes] = useState<ClienteOpcao[]>([]);
+  const [clienteSelecionado, setClienteSelecionado] = useState<ClienteOpcao | null>(null);
   const [tipos, setTipos] = useState<TipoServico[]>([]);
   const [tecnicos, setTecnicos] = useState<Usuario[]>([]);
   const [clientId, setClientId] = useState("");
@@ -329,6 +382,8 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
   const [novoClienteCep, setNovoClienteCep] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroBuscaCliente, setErroBuscaCliente] = useState<string | null>(null);
+  const [buscandoClientes, setBuscandoClientes] = useState(false);
   const [etapa, setEtapa] = useState(0);
 
   function formatarCep(valor: string) {
@@ -361,35 +416,68 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
   }
 
   useEffect(() => {
-    api.get<Cliente[]>("/clientes").then((r) => setClientes(r.data));
-    api.get<TipoServico[]>("/tipos-servico").then((r) => setTipos(r.data));
+    let ativo = true;
+    api
+      .get<TipoServico[]>("/tipos-servico")
+      .then((r) => {
+        if (ativo) setTipos(r.data);
+      })
+      .catch(() => {
+        if (ativo) setErro("Não foi possível carregar os tipos de serviço.");
+      });
     api
       .get<Usuario[]>("/usuarios")
-      .then((r) => setTecnicos(r.data.filter((u) => u.role === 'TECNICO' || u.role === 'ADMIN')));
+      .then((r) => {
+        if (ativo) setTecnicos(r.data.filter((u) => u.role === "TECNICO" || u.role === "ADMIN"));
+      })
+      .catch(() => {
+        if (ativo) setErro("Não foi possível carregar os técnicos.");
+      });
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
-  const clienteSelecionado = clientes.find((c) => c.id === clientId);
+  useEffect(() => {
+    const termo = clientSearch.trim();
+    if (modoClienteNovo || clientId || termo.length < 2) {
+      setClientes([]);
+      setBuscandoClientes(false);
+      setErroBuscaCliente(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setClientes([]);
+    const timer = window.setTimeout(() => {
+      setBuscandoClientes(true);
+      setErroBuscaCliente(null);
+      void api
+        .get<ClienteOpcao[]>("/clientes", {
+          params: { search: termo },
+          signal: controller.signal,
+        })
+        .then(({ data }) => {
+          if (!controller.signal.aborted) setClientes(data);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setErroBuscaCliente("Não foi possível buscar clientes. Tente novamente.");
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setBuscandoClientes(false);
+        });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [clientId, clientSearch, modoClienteNovo]);
+
   const temEnderecoUnico = Boolean(clienteSelecionado && clienteSelecionado.addresses.length === 1);
-  const clientesFiltrados = clientes.filter((cliente) => {
-    const termo = clientSearch.trim().toLowerCase();
-    if (!termo) return true;
-    return cliente.name.toLowerCase().includes(termo) || cliente.email.toLowerCase().includes(termo);
-  });
-
-  useEffect(() => {
-    if (clientId && clientes.length > 0) {
-      const cliente = clientes.find((c) => c.id === clientId);
-      setClientSearch(cliente?.name ?? "");
-    } else if (!clientId) {
-      setClientSearch("");
-    }
-  }, [clientId, clientes]);
-
-  useEffect(() => {
-    if (clienteSelecionado && clienteSelecionado.addresses.length === 1) {
-      setAddressId(clienteSelecionado.addresses[0].id);
-    }
-  }, [clienteSelecionado]);
 
   const etapas = [
     { titulo: "Cliente e endereço", descricao: "Selecione o cliente e o local de atendimento." },
@@ -473,6 +561,7 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
         clienteIdFinal = clienteNovo.id;
         addressIdFinal = clienteNovo.addresses[0]?.id ?? "";
         setClientId(clienteNovo.id);
+        setClienteSelecionado(clienteNovo);
         setAddressId(clienteNovo.addresses[0]?.id ?? "");
       } catch {
         setErro("Não foi possível cadastrar o cliente novo. Verifique os dados e tente novamente.");
@@ -556,6 +645,7 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
                     setErro(null);
                     if (!modoClienteNovo) {
                       setClientId("");
+                      setClienteSelecionado(null);
                       setAddressId("");
                     }
                   }}
@@ -573,8 +663,9 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
                       onChange={(e) => {
                         const valor = e.target.value;
                         setClientSearch(valor);
-                        if (!valor.trim()) {
+                        if (valor !== clienteSelecionado?.name) {
                           setClientId("");
+                          setClienteSelecionado(null);
                           setAddressId("");
                         }
                       }}
@@ -583,23 +674,40 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
                     />
                   </Campo>
 
-                  {clientSearch.trim() && clientesFiltrados.length > 0 && (
+                  {clientSearch.trim() && !clienteSelecionado && (
                     <div className="mt-2 max-h-52 overflow-auto rounded-lg border border-border bg-surfaceAlt p-2 shadow-sm">
-                      {clientesFiltrados.slice(0, 6).map((cliente) => (
-                        <button
-                          key={cliente.id}
-                          type="button"
-                          onClick={() => {
-                            setClientId(cliente.id);
-                            setClientSearch(cliente.name);
-                            setAddressId("");
-                          }}
-                          className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-ink transition hover:bg-surface"
-                        >
-                          <span className="font-medium">{cliente.name}</span>
-                          <span className="text-xs text-inkMuted">{cliente.email}</span>
-                        </button>
-                      ))}
+                      {clientSearch.trim().length < 2 ? (
+                        <p className="px-3 py-2 text-sm text-inkMuted">
+                          Digite ao menos 2 caracteres para buscar.
+                        </p>
+                      ) : buscandoClientes ? (
+                        <p className="px-3 py-2 text-sm text-inkMuted">Buscando clientes...</p>
+                      ) : erroBuscaCliente ? (
+                        <p className="px-3 py-2 text-sm text-status-cancelado" role="alert">
+                          {erroBuscaCliente}
+                        </p>
+                      ) : clientes.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-inkMuted">Nenhum cliente encontrado.</p>
+                      ) : (
+                        clientes.map((cliente) => (
+                          <button
+                            key={cliente.id}
+                            type="button"
+                            onClick={() => {
+                              setClientId(cliente.id);
+                              setClientSearch(cliente.name);
+                              setClienteSelecionado(cliente);
+                              setAddressId(
+                                cliente.addresses.length === 1 ? cliente.addresses[0].id : ""
+                              );
+                            }}
+                            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-ink transition hover:bg-surface"
+                          >
+                            <span className="font-medium">{cliente.name}</span>
+                            <span className="text-xs text-inkMuted">{cliente.email}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>

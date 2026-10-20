@@ -36,7 +36,7 @@ Todas as rotas abaixo são ADMIN.
 
 | Método | Caminho | Acesso |
 |---|---|---|
-| `GET` | `/clientes` | ADMIN, TECNICO |
+| `GET` | `/clientes` | ADMIN, TECNICO; `?search=termo` busca clientes ativos pelo nome ou e-mail e retorna até 6 opções com endereços resumidos; exige ao menos 2 caracteres. Sem `search`, mantém a lista completa para compatibilidade. |
 | `GET` | `/clientes/:id` | ADMIN, TECNICO |
 | `POST` | `/clientes` | ADMIN |
 | `PATCH` | `/clientes/:id` | ADMIN |
@@ -58,7 +58,7 @@ Todas as rotas abaixo são ADMIN.
 
 | Método | Caminho | Acesso | Observação |
 |---|---|---|---|
-| `GET` | `/chamados` | ADMIN, TECNICO | Técnico vê atribuídos a si ou sem responsável. Aceita `status` e `userId`. |
+| `GET` | `/chamados` | ADMIN, TECNICO | Técnico vê atribuídos a si ou sem responsável. Aceita `status`, `userId`, `clientId`, `page` e `pageSize` (padrão 10, máximo 100). Com paginação retorna `{ items, page, pageSize, total, resumo }`, incluindo totais por status; sem `page`/`pageSize`, mantém a resposta em lista para compatibilidade. |
 | `GET` | `/chamados/agenda?from=ISO&to=ISO` | ADMIN, TECNICO | Aceita filtros `userId`, `city`, `status`, `serviceTypeId`. |
 | `GET` | `/chamados/:id` | ADMIN, técnico com escopo | Detalhe, cliente/endereço, histórico, notas, anexos e auditoria. |
 | `POST` | `/chamados` | ADMIN | Abre chamado; campos incluem cliente, endereço, serviço, equipamento, problema, agendamento e dados preventivos opcionais. |
@@ -80,8 +80,9 @@ retorno. Reabertura limpa conclusão e retorno.
 
 | Método | Caminho | Acesso | Observação |
 |---|---|---|---|
-| `GET` | `/notificacoes` | ADMIN, TECNICO | Filtros opcionais: `clientId`, `resolution=true|false`, `type`. |
-| `POST` | `/notificacoes` | ADMIN | Criar registro manual. |
+| `GET` | `/notificacoes` | ADMIN, TECNICO | Filtros: `clientId`, `resolution=true|false`, `type`; paginação por `page` (padrão 1) e `pageSize` (padrão 20, máximo 100). Retorna `{ items, page, pageSize, total }`. Técnicos veem apenas notificações de chamados atribuídos a eles ou sem responsável. |
+| `GET` | `/notificacoes/contagem` | ADMIN, TECNICO | Contagem de notificações; `resolution` aceita `true|false` e usa `false` por padrão. Aplica o mesmo escopo por perfil. |
+| `POST` | `/notificacoes` | ADMIN | Criar registro manual. `ticketId` é opcional. Registros sem chamado associado não são listados para técnicos. |
 | `PATCH` | `/notificacoes/:id/resolver` | ADMIN | Marcar como resolvida. |
 
 ## Dashboard e empresa
@@ -95,7 +96,11 @@ retorno. Reabertura limpa conclusão e retorno.
 | `GET` | `/dashboard/alertas` | ADMIN, TECNICO | Retornos preventivos pendentes associados ao chamado. |
 | `POST` | `/dashboard/verificar-manutencoes` | ADMIN | Disparar verificação de retornos próximos. |
 | `GET` | `/empresa` | ADMIN, TECNICO | Ler configurações da empresa singleton. |
-| `PATCH` | `/empresa` | ADMIN | Atualizar campos aceitos pelo schema do controller. |
+| `PATCH` | `/empresa` | ADMIN | Inclui `maintenanceReminderDays` (inteiro de 0 a 365); `0` significa alertar apenas no dia do retorno. |
+
+Notificações ligadas a chamados incluem `ticketId`. A exclusão de um chamado
+preserva os logs e limpa essa referência. O dashboard e os contatos prioritários
+aplicam o mesmo escopo de visibilidade por perfil.
 
 ## Notas de integração
 

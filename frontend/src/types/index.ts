@@ -76,6 +76,7 @@ export interface Empresa {
   address: string | null;
   logoUrl: string | null;
   slaHours: number;
+  maintenanceReminderDays: number;
 }
 
 export interface DashboardResumo {
@@ -169,6 +170,7 @@ export type TipoNotificacao =
 
 export interface Notificacao {
   id: string;
+  ticketId: string | null;
   type: TipoNotificacao;
   message: string;
   resolution: boolean;

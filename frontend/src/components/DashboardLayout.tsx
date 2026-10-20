@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { api } from "../api/client";
+import { api, NOTIFICATION_CHANGE_EVENT } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { BannerAssinatura } from "./BannerAssinatura";
 import { useAssinatura } from "../context/SubscriptionContext";
+import { Logo } from "./Logo";
 
 const links = [
   { to: "/", label: "Dashboard", roles: ["ADMIN", "TECNICO"] },
@@ -15,31 +16,45 @@ const links = [
   { to: "/usuarios", label: "Usuários", roles: ["ADMIN"] },
 ];
 
-// Intervalo de checagem do contador de pendentes — simples "alerta dentro
-// do sistema" sem precisar de websocket/push; se quiser tempo real de
-// verdade depois, é aqui que entra.
-const INTERVALO_POLL_MS = 60_000;
-
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const { assinatura } = useAssinatura();
   const [pendentes, setPendentes] = useState(0);
+  const [erroContagem, setErroContagem] = useState(false);
   const [mobileMenuAberto, setMobileMenuAberto] = useState(false);
 
   useEffect(() => {
     async function carregarContagem() {
       try {
-        const { data } = await api.get<{ id: string }[]>("/notificacoes", {
+        const { data } = await api.get<{ total: number }>("/notificacoes/contagem", {
           params: { resolution: false },
         });
-        setPendentes(data.length);
+        setPendentes(data.total);
+        setErroContagem(false);
       } catch {
-        // silencioso — o contador não é crítico o bastante pra travar a tela
+        setErroContagem(true);
       }
     }
+
+    function aoAlterarNotificacoes() {
+      void carregarContagem();
+    }
+
+    function aoVoltarParaAba() {
+      if (document.visibilityState === "visible") {
+        void carregarContagem();
+      }
+    }
+
     carregarContagem();
-    const id = setInterval(carregarContagem, INTERVALO_POLL_MS);
-    return () => clearInterval(id);
+
+    window.addEventListener(NOTIFICATION_CHANGE_EVENT, aoAlterarNotificacoes);
+    window.addEventListener("focus", aoVoltarParaAba);
+
+    return () => {
+      window.removeEventListener(NOTIFICATION_CHANGE_EVENT, aoAlterarNotificacoes);
+      window.removeEventListener("focus", aoVoltarParaAba);
+    };
   }, []);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -56,14 +71,8 @@ export function DashboardLayout() {
   const navContent = (
     <>
       <div className="px-5 py-6">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1d0ae] text-lg font-bold text-[#1e2b2b] shadow-[inset_0_0_0_1px_rgba(30,43,43,0.08)]">
-            C
-          </div>
-          <div>
-            <p className="text-xl font-black tracking-tight text-[#fffaf3]">Climatiza</p>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#d5d0c7]">Operação</p>
-          </div>
+        <div className="mb-5">
+          <Logo variant="sidebar" subtitle="Operação" />
         </div>
 
         <div className="rounded-2xl border border-[#3f5653] bg-[#263939] p-3">
@@ -87,6 +96,11 @@ export function DashboardLayout() {
               {link.to === "/notificacoes" && pendentes > 0 && (
                 <span className="rounded-full bg-status-cancelado px-1.5 py-0.5 text-[10px] font-bold text-base">
                   {pendentes}
+                </span>
+              )}
+              {link.to === "/notificacoes" && erroContagem && (
+                <span className="text-[10px] text-status-cancelado" role="status">
+                  Contagem indisponível
                 </span>
               )}
             </NavLink>

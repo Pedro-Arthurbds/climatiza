@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Logo } from "../components/Logo";
 
 export function Login() {
   const { user, login } = useAuth();
@@ -39,14 +40,8 @@ export function Login() {
         <div className="grid md:grid-cols-[1.12fr_0.88fr]">
           <div className="flex flex-col justify-between bg-[radial-gradient(circle_at_top_left,_rgba(47,79,72,0.14),_transparent_32%),linear-gradient(180deg,_#edf2ee_0%,_#f9f3ea_100%)] p-8 lg:p-10">
             <div>
-              <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d58e5d] text-xl font-black text-[#1f2a2a] shadow-[inset_0_0_0_1px_rgba(31,42,42,0.07)]">
-                  C
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#5f6a62]">Sistema</p>
-                  <p className="text-2xl font-black tracking-tight text-[#1f2a2a]">Climatiza</p>
-                </div>
+              <div className="mb-6">
+                <Logo variant="login" subtitle="Sistema" />
               </div>
 
               <h1 className="max-w-md text-4xl leading-none text-[#1f2a2a] lg:text-5xl">

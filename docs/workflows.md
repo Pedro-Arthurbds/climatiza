@@ -29,18 +29,24 @@ com padrão de 7 dias.
 O job roda ao iniciar a API e diariamente às 08:00 conforme o fuso do
 processo. O botão ADMIN “Verificar retornos próximos” executa a mesma
 verificação imediatamente. O registro aparece como notificação interna e
-não é enviado ao cliente.
+não é enviado ao cliente. A configuração `maintenanceReminderDays` pode ser
+alterada por ADMIN em `PATCH /api/empresa`; aceita valores de 0 a 365 dias.
+Com 0, o job alerta somente no dia do retorno.
 
 ## Notificações
 
-Agendamento, atribuição e conclusão criam logs associados ao cliente. O canal
-externo atual somente escreve no console; não existe integração real de
-e-mail/WhatsApp. O retorno preventivo também fica no log interno, mas não
-dispara o canal externo.
+Agendamento, atribuição, conclusão e retorno preventivo criam logs internos
+associados ao cliente e ao chamado de origem. Não há integração de e-mail ou
+WhatsApp, nem tentativa de entrega externa. A exclusão do chamado preserva o
+histórico e remove apenas o vínculo com o chamado.
 
-Marcar uma notificação como resolvida define `resolution=true`. Para gerar
-outro alerta de retorno para o mesmo chamado, a janela precisa ser verificada
-e não deve já existir log preventivo dentro da mesma janela.
+Técnicos consultam notificações dos chamados atribuídos a eles ou sem
+responsável; ADMIN consulta todas. Apenas ADMIN pode resolver notificações.
+Marcar uma notificação como resolvida define `resolution=true`. A resolução
+preventiva é deduplicada por chamado e data de retorno, inclusive em execuções
+concorrentes do job. Ao reabrir um chamado concluído, lembretes preventivos
+pendentes daquele chamado são marcados como resolvidos, preservando o histórico.
+Uma nova conclusão calcula outra data de retorno e pode gerar novo lembrete.
 
 ## Auditoria
 

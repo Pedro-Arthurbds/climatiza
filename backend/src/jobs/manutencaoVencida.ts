@@ -1,5 +1,4 @@
 import { prisma } from "../lib/prisma";
-import { registrarNotificacao } from "../services/notificacoes";
 
 // Alerta somente retornos de atendimentos concluídos, dentro da janela
 // configurada na empresa. Chamados cancelados ou ainda em andamento não geram retorno.
@@ -14,6 +13,7 @@ export async function verificarRetornosPreventivos() {
   const diasAviso = empresa?.maintenanceReminderDays ?? 7;
   const fimJanela = new Date(agora);
   fimJanela.setDate(fimJanela.getDate() + diasAviso);
+  fimJanela.setHours(23, 59, 59, 999);
 
   const pendentes = await prisma.ticket.findMany({
     where: {
@@ -27,28 +27,18 @@ export async function verificarRetornosPreventivos() {
   let criados = 0;
 
   for (const ticket of pendentes) {
-    const inicioAviso = new Date(ticket.maintenanceNextAt!);
-    inicioAviso.setDate(inicioAviso.getDate() - diasAviso);
-    const jaExiste = await prisma.notificationLog.count({
-      where: {
+    const resultado = await prisma.notificationLog.createMany({
+      data: [{
         clientId: ticket.clientId,
         serviceTypeId: ticket.serviceTypeId,
+        ticketId: ticket.id,
+        maintenanceDueAt: ticket.maintenanceNextAt!,
         type: "LEMBRETE_MANUTENCAO",
-        createdAt: { gte: inicioAviso },
-        message: { startsWith: "Retorno preventivo previsto para" },
-      },
+        message: `Retorno preventivo previsto para ${ticket.maintenanceNextAt!.toLocaleString("pt-BR")}.`,
+      }],
+      skipDuplicates: true,
     });
-
-    if (jaExiste > 0) continue;
-
-    await registrarNotificacao({
-      clientId: ticket.clientId,
-      serviceTypeId: ticket.serviceTypeId,
-      type: "LEMBRETE_MANUTENCAO",
-      mensagem: `Retorno preventivo previsto para ${new Date(ticket.maintenanceNextAt!).toLocaleString("pt-BR")}.`,
-      enviarAoCliente: false,
-    });
-    criados++;
+    criados += resultado.count;
   }
 
   return { verificados: pendentes.length, criados };

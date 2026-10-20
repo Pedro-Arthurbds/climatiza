@@ -15,6 +15,7 @@ const empresaSchema = z.object({
   address: z.string().min(1).nullable().optional(),
   logoUrl: z.string().url().nullable().optional(),
   slaHours: z.number().int().min(1).optional(),
+  maintenanceReminderDays: z.number().int().min(0).max(365).optional(),
 });
 
 export async function obter(_req: Request, res: Response) {

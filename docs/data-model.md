@@ -14,7 +14,7 @@ O schema canônico está em `backend/prisma/schema.prisma`; a evolução do banc
 | `TicketStatusHistory` | Histórico de transições de status e usuário que fez a alteração. |
 | `TicketNote` | Nota interna vinculada ao chamado e opcionalmente ao autor. |
 | `TicketAttachment` | Metadados e URL de anexo; não armazena o arquivo binário. |
-| `NotificationLog` | Log de notificação ligado ao cliente e opcionalmente ao tipo de serviço; `resolution` indica se foi resolvida. |
+| `NotificationLog` | Log interno ligado ao cliente e opcionalmente ao tipo de serviço e chamado; `maintenanceDueAt` identifica o ciclo de retorno preventivo e `resolution` indica se foi resolvida. |
 | `AuditLog` | Auditoria por tipo/ID da entidade e JSON de alterações; a associação é polimórfica, sem FK para a entidade auditada. |
 
 ## Status
@@ -23,6 +23,8 @@ O schema canônico está em `backend/prisma/schema.prisma`; a evolução do banc
 
 `NotificationType`: `MANUTENCAO_VENCIDA`, `LEMBRETE_MANUTENCAO`,
 `AGENDAMENTO`, `TECNICO_ATRIBUIDO`, `CHAMADO_CONCLUIDO`.
+`MANUTENCAO_VENCIDA` permanece por compatibilidade com registros existentes;
+o fluxo atual não cria novos registros desse tipo.
 
 ## Exclusões
 

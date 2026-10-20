@@ -10,10 +10,10 @@ O frontend é uma SPA React, TypeScript e Vite. As rotas estão em
 |---|---|---|
 | `/login` | Login | Autenticar usuário ativo. |
 | `/` | Dashboard | Indicadores, gráficos, carga da equipe e retornos preventivos. |
-| `/chamados` | Chamados | Filtrar, abrir chamado, ver detalhe, status, notas e histórico. |
+| `/chamados` | Chamados | Filtrar, abrir chamado, ver detalhe, status, notas e histórico; lista paginada (10 itens, 5 em telas menores que 640 px). |
 | `/agenda` | Agenda | Consultar agenda por período e abrir/reagendar chamados. |
 | `/clientes` | Clientes | Buscar, cadastrar e editar clientes e endereços. |
-| `/notificacoes` | Notificações | Consultar pendentes/resolvidas e verificar retornos (ADMIN). |
+| `/notificacoes` | Notificações | Consultar pendentes/resolvidas e verificar retornos (ADMIN); lista paginada (10 itens, 5 em telas menores que 640 px). |
 | `/tipos-servico` | Tipos de serviço | Gerenciar tipos (ADMIN). |
 | `/usuarios` | Usuários | Gerenciar contas e papéis (ADMIN). |
 

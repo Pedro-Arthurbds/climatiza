@@ -158,6 +158,7 @@ model Ticket {
   statusHistory TicketStatusHistory[]
   notes         TicketNote[]
   attachments   TicketAttachment[]
+  notificationLogs NotificationLog[]
 
   @@index([status])
   @@index([scheduledAt])
@@ -224,6 +225,9 @@ model NotificationLog {
   // onde o job precisa saber qual tipo de serviço pra não duplicar alerta.
   serviceTypeId String?
   serviceType   ServiceType? @relation(fields: [serviceTypeId], references: [id])
+  ticketId      String?
+  ticket        Ticket?      @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  maintenanceDueAt DateTime?
   type       NotificationType
   message    String
   resolution Boolean          @default(false)
@@ -231,6 +235,8 @@ model NotificationLog {
   updatedAt  DateTime         @updatedAt
 
   @@index([clientId])
+  @@index([resolution, createdAt])
+  @@unique([ticketId, maintenanceDueAt])
 }
 
 enum NotificationType {

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import { useResponsivePageSize } from "../hooks/useResponsivePageSize";
 import type { Chamado, Cliente } from "../types";
 import { formatarDataHoraBrasil } from "../utils/dataBrasil";
 import { StatusBadge } from "./StatusBadge";
 
-// Painel lateral com todos os chamados já gerados para um cliente.
+// Painel lateral com o histórico de chamados de um cliente.
 // Clicar em um chamado chama `onAbrirChamado`, que abre o painel de detalhes.
 // `versao` muda quando um chamado é alterado, para recarregar a lista.
 export function HistoricoCliente({
@@ -18,29 +19,46 @@ export function HistoricoCliente({
   onAbrirChamado: (chamadoId: string) => void;
   onFechar: () => void;
 }) {
-  const [chamados, setChamados] = useState<Chamado[] | null>(null);
+  const [chamados, setChamados] = useState<Chamado[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const pageSize = useResponsivePageSize(() => setPagina(1));
+  const [total, setTotal] = useState(0);
+  const [resumo, setResumo] = useState({ total: 0, abertos: 0, concluidos: 0 });
+  const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     let ativo = true;
+    setCarregando(true);
     setErro(null);
     api
-      .get<Chamado[]>("/chamados", { params: { clientId: cliente.id } })
+      .get<{
+        items: Chamado[];
+        total: number;
+        resumo: { total: number; abertos: number; concluidos: number };
+      }>("/chamados", {
+        params: { clientId: cliente.id, page: pagina, pageSize },
+      })
       .then((r) => {
-        if (ativo) setChamados(r.data);
+        if (!ativo) return;
+        setChamados(r.data.items);
+        setTotal(r.data.total);
+        setResumo(r.data.resumo);
+        const ultimaPagina = Math.max(1, Math.ceil(r.data.total / pageSize));
+        if (pagina > ultimaPagina) setPagina(ultimaPagina);
       })
       .catch(() => {
         if (ativo) setErro("Não foi possível carregar o histórico de chamados.");
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false);
       });
     return () => {
       ativo = false;
     };
-  }, [cliente.id, versao]);
+  }, [cliente.id, versao, pagina, pageSize]);
 
-  const total = chamados?.length ?? 0;
-  const abertos =
-    chamados?.filter((c) => c.status === "ABERTO" || c.status === "EM_ANDAMENTO").length ?? 0;
-  const concluidos = chamados?.filter((c) => c.status === "CONCLUIDO").length ?? 0;
+  const totalPaginas = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onFechar}>
@@ -68,27 +86,27 @@ export function HistoricoCliente({
           </button>
         </div>
 
-        {chamados && chamados.length > 0 && (
+        {total > 0 && (
           <div className="grid grid-cols-3 gap-3 border-b border-border px-6 py-4 text-center">
-            <Resumo rotulo="Total" valor={total} />
-            <Resumo rotulo="Em aberto" valor={abertos} />
-            <Resumo rotulo="Concluídos" valor={concluidos} />
+            <Resumo rotulo="Total" valor={resumo.total} />
+            <Resumo rotulo="Em aberto" valor={resumo.abertos} />
+            <Resumo rotulo="Concluídos" valor={resumo.concluidos} />
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto p-6">
           {erro && <p className="text-sm text-status-cancelado">{erro}</p>}
-          {!erro && chamados === null && (
+          {!erro && carregando && (
             <p className="text-sm text-inkMuted">Carregando...</p>
           )}
-          {!erro && chamados?.length === 0 && (
+          {!erro && !carregando && total === 0 && (
             <p className="text-sm text-inkMuted">
               Nenhum chamado foi gerado para este cliente ainda.
             </p>
           )}
 
           <ul className="flex flex-col gap-3">
-            {chamados?.map((c) => (
+            {chamados.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
@@ -117,6 +135,31 @@ export function HistoricoCliente({
               </li>
             ))}
           </ul>
+          {total > pageSize && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+              <span className="text-inkMuted">
+                Página {pagina} de {totalPaginas} · {total} chamados
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
+                  disabled={pagina === 1 || carregando}
+                  className="rounded-lg border border-border px-3 py-1.5 font-semibold text-inkMuted disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPagina((atual) => Math.min(totalPaginas, atual + 1))}
+                  disabled={pagina >= totalPaginas || carregando}
+                  className="rounded-lg border border-border px-3 py-1.5 font-semibold text-inkMuted disabled:opacity-50"
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

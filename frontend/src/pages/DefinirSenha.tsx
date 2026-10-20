@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Logo } from "../components/Logo";
 
 export function DefinirSenha() {
   const { user, finishFirstAccess } = useAuth();
@@ -35,7 +36,9 @@ export function DefinirSenha() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f6f1e8] px-4 py-10">
       <form onSubmit={handleSubmit} className="w-full max-w-md rounded-[26px] border border-[#d9cbb4] bg-[#fffdf9] p-6 shadow-panel">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-inkMuted">Primeiro acesso</p>
+        <div className="mb-5">
+          <Logo variant="login" subtitle="Primeiro acesso" />
+        </div>
         <h1 className="mt-2 text-3xl text-ink">Crie sua senha</h1>
         <p className="mt-2 text-sm leading-6 text-inkMuted">Escolha uma senha pessoal para continuar no Climatiza.</p>
 

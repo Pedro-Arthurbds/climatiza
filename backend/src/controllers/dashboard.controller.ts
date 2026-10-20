@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { verificarRetornosPreventivos } from "../jobs/manutencaoVencida";
 import { prisma } from "../lib/prisma";
+import { notificationScope } from "../utils/notificationScope";
 
 const STATUS_ABERTOS = ["ABERTO", "EM_ANDAMENTO"] as const;
 
@@ -99,6 +100,7 @@ export async function contatosPrioritarios(_req: Request, res: Response) {
   const [hoje, semana, mes] = await Promise.all([
     prisma.notificationLog.findMany({
       where: {
+        ...notificationScope(_req.userRole, _req.userId),
         resolution: false,
         createdAt: { gte: inicioHoje, lte: fimHoje },
       },
@@ -108,6 +110,7 @@ export async function contatosPrioritarios(_req: Request, res: Response) {
     }),
     prisma.notificationLog.findMany({
       where: {
+        ...notificationScope(_req.userRole, _req.userId),
         resolution: false,
         createdAt: { gte: inicioSemana, lte: fimSemana },
       },
@@ -117,6 +120,7 @@ export async function contatosPrioritarios(_req: Request, res: Response) {
     }),
     prisma.notificationLog.findMany({
       where: {
+        ...notificationScope(_req.userRole, _req.userId),
         resolution: false,
         createdAt: { gte: inicioMes, lte: fimMes },
       },
@@ -219,12 +223,12 @@ export async function grafico(_req: Request, res: Response) {
 }
 
 // Alertas de manutenção vencida ainda não resolvidos.
-export async function alertas(_req: Request, res: Response) {
+export async function alertas(req: Request, res: Response) {
   const logs = await prisma.notificationLog.findMany({
     where: {
+      ...notificationScope(req.userRole, req.userId),
       type: "LEMBRETE_MANUTENCAO",
       resolution: false,
-      message: { startsWith: "Retorno preventivo previsto para" },
     },
     include: {
       client: { select: { id: true, name: true } },
@@ -234,28 +238,7 @@ export async function alertas(_req: Request, res: Response) {
     take: 20,
   });
 
-  const alertasComChamado = await Promise.all(
-    logs.map(async (log) => {
-      const chamado = log.serviceTypeId
-        ? await prisma.ticket.findFirst({
-            where: {
-              clientId: log.clientId,
-              serviceTypeId: log.serviceTypeId,
-              isPreventiveMaintenance: true,
-              status: "CONCLUIDO",
-              completedAt: { not: null },
-              createdAt: { lte: log.createdAt },
-            },
-            orderBy: { createdAt: "desc" },
-            select: { id: true },
-          })
-        : null;
-
-      return { ...log, ticketId: chamado?.id ?? null };
-    })
-  );
-
-  return res.json(alertasComChamado);
+  return res.json(logs);
 }
 
 // Dispara manualmente o job de manutenção vencida (que normalmente roda

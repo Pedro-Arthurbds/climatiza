@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  contar,
   criar,
   listar,
   marcarResolvido,
@@ -11,6 +12,7 @@ const router = Router();
 
 router.use(autenticar);
 
+router.get("/contagem", asyncHandler(contar));
 router.get("/", asyncHandler(listar));
 router.post("/", exigirAdmin, asyncHandler(criar));
 router.patch("/:id/resolver", exigirAdmin, asyncHandler(marcarResolvido));

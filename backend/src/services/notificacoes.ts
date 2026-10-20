@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { enviarNotificacao } from "./notificationChannel";
+import type { Tx } from "../lib/prisma";
 
 type TipoNotificacao =
   | "MANUTENCAO_VENCIDA"
@@ -8,36 +8,22 @@ type TipoNotificacao =
   | "TECNICO_ATRIBUIDO"
   | "CHAMADO_CONCLUIDO";
 
-// Grava o log (fonte de verdade, aparece na tela de Notificações) e só
-// depois tenta enviar — se o envio falhar, o registro já existe e não se
-// perde (diferente de mandar primeiro e só depois gravar).
 export async function registrarNotificacao(params: {
   clientId: string;
   serviceTypeId?: string;
+  ticketId?: string;
+  maintenanceDueAt?: Date;
   type: TipoNotificacao;
   mensagem: string;
-  enviarAoCliente?: boolean;
-}) {
-  await prisma.notificationLog.create({
+}, db: Tx | typeof prisma = prisma) {
+  return db.notificationLog.create({
     data: {
       clientId: params.clientId,
       serviceTypeId: params.serviceTypeId,
+      ticketId: params.ticketId,
+      maintenanceDueAt: params.maintenanceDueAt,
       type: params.type,
       message: params.mensagem,
     },
-  });
-
-  if (params.enviarAoCliente === false) return;
-
-  const cliente = await prisma.client.findUnique({
-    where: { id: params.clientId },
-    select: { email: true, name: true },
-  });
-  if (!cliente) return;
-
-  await enviarNotificacao({
-    destinatario: cliente.email,
-    assunto: "Climatiza",
-    mensagem: params.mensagem,
   });
 }

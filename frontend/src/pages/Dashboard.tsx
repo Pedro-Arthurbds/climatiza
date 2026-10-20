@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { useAssinatura } from "../context/SubscriptionContext";
 import type {
   AlertaManutencao,
@@ -24,6 +25,7 @@ const mesAbreviado = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { assinatura } = useAssinatura();
   const somenteLeitura =
     assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
@@ -31,6 +33,7 @@ export function Dashboard() {
   const [tecnicos, setTecnicos] = useState<TecnicoCarga[]>([]);
   const [grafico, setGrafico] = useState<GraficoDashboard | null>(null);
   const [alertas, setAlertas] = useState<AlertaManutencao[]>([]);
+  const [erroAlertas, setErroAlertas] = useState<string | null>(null);
   const [mostrarEquipe, setMostrarEquipe] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return window.innerWidth >= 768;
@@ -40,8 +43,13 @@ export function Dashboard() {
     return window.innerWidth >= 768;
   });
   async function carregarAlertas() {
-    const { data } = await api.get<AlertaManutencao[]>("/dashboard/alertas");
-    setAlertas(data);
+    try {
+      const { data } = await api.get<AlertaManutencao[]>("/dashboard/alertas");
+      setAlertas(data);
+      setErroAlertas(null);
+    } catch {
+      setErroAlertas("Não foi possível carregar os alertas de manutenção.");
+    }
   }
 
   useEffect(() => {
@@ -64,8 +72,13 @@ export function Dashboard() {
   }, []);
 
   async function resolverAlerta(id: string) {
-    await api.patch(`/notificacoes/${id}/resolver`);
-    carregarAlertas();
+    setErroAlertas(null);
+    try {
+      await api.patch(`/notificacoes/${id}/resolver`);
+      await carregarAlertas();
+    } catch {
+      setErroAlertas("Não foi possível resolver o alerta de manutenção.");
+    }
   }
 
   const porPeriodo =
@@ -264,6 +277,11 @@ export function Dashboard() {
               </span>
             )}
           </div>
+          {erroAlertas && (
+            <p className="mb-3 text-sm text-status-cancelado" role="alert">
+              {erroAlertas}
+            </p>
+          )}
           {alertas.length === 0 && (
             <p className="text-sm text-inkMuted">Nenhum alerta pendente.</p>
           )}
@@ -291,13 +309,15 @@ export function Dashboard() {
                     <span className="mt-2 inline-block text-xs text-inkMuted">Chamado relacionado não encontrado</span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => resolverAlerta(a.id)}
-                  className="shrink-0 text-xs font-semibold text-accent hover:underline"
-                >
-                  Resolver
-                </button>
+                {user?.role === "ADMIN" && (
+                  <button
+                    type="button"
+                    onClick={() => resolverAlerta(a.id)}
+                    className="shrink-0 text-xs font-semibold text-accent hover:underline"
+                  >
+                    Resolver
+                  </button>
+                )}
               </li>
             ))}
           </ul>

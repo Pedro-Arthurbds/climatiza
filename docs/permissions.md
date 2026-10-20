@@ -13,6 +13,7 @@
 | Alterar status de chamado | Sim | Chamado próprio | Não |
 | Atribuir e reagendar | Sim | Não | Não |
 | Consultar chamado | Todos | Próprio ou sem responsável | Não |
+| Consultar notificações | Todas | Chamados próprios ou sem responsável | Não |
 | Criar nota/anexo | Sim | Chamado acessível | Não |
 | Excluir nota | Qualquer nota | Própria nota em chamado acessível | Não |
 | Excluir anexo / resolver notificação | Sim | Não | Não |

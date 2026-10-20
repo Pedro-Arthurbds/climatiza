@@ -57,6 +57,14 @@ const anexoSchema = z.object({
   mimeType: z.string().min(1).optional(),
 });
 
+const filtrosListaChamadosSchema = z.object({
+  status: z.enum(["ABERTO", "EM_ANDAMENTO", "CONCLUIDO", "CANCELADO"]).optional(),
+  userId: z.string().min(1).optional(),
+  clientId: z.string().min(1).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
+});
+
 const include = {
   client: true,
   address: true,
@@ -106,20 +114,76 @@ async function exigirAcessoAoChamado(req: Request, ticketId: string) {
 }
 
 export async function listar(req: Request, res: Response) {
-  const { status, userId, clientId } = req.query;
+  const filtros = filtrosListaChamadosSchema.parse(req.query);
+  const where = {
+    ...filtroPorPapel(req),
+    status: filtros.status,
+    userId: filtros.userId,
+    clientId: filtros.clientId,
+  };
+
+  const pagina = filtros.page !== undefined || filtros.pageSize !== undefined;
+  const page = filtros.page ?? 1;
+  const pageSize = filtros.pageSize ?? 10;
+
+  if (pagina) {
+    const [tickets, statusCounts, atrasados] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        include,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.ticket.groupBy({
+        by: ["status"],
+        where: {
+          ...filtroPorPapel(req),
+          userId: filtros.userId,
+          clientId: filtros.clientId,
+        },
+        _count: { _all: true },
+      }),
+      prisma.ticket.count({
+        where: {
+          ...filtroPorPapel(req),
+          userId: filtros.userId,
+          clientId: filtros.clientId,
+          status: { in: ["ABERTO", "EM_ANDAMENTO"] },
+          scheduledAt: { lt: new Date() },
+        },
+      }),
+    ]);
+
+    const contagem = Object.fromEntries(
+      statusCounts.map((item) => [item.status, item._count._all])
+    );
+    const totalResumo = Object.values(contagem).reduce(
+      (soma, quantidade) => soma + quantidade,
+      0
+    );
+
+    return res.json({
+      items: tickets,
+      page,
+      pageSize,
+      total: filtros.status ? contagem[filtros.status] ?? 0 : totalResumo,
+      resumo: {
+        total: totalResumo,
+        abertos: contagem.ABERTO ?? 0,
+        andamento: contagem.EM_ANDAMENTO ?? 0,
+        concluidos: contagem.CONCLUIDO ?? 0,
+        atrasados,
+      },
+    });
+  }
 
   const tickets = await prisma.ticket.findMany({
-    where: {
-      ...filtroPorPapel(req),
-      status: typeof status === "string" ? (status as never) : undefined,
-      userId: typeof userId === "string" ? userId : undefined,
-      // Histórico do cliente: mantém filtroPorPapel, então o técnico só vê
-      // os chamados do cliente que ele já poderia ver na lista geral.
-      clientId: typeof clientId === "string" ? clientId : undefined,
-    },
+    where,
     include,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
+
   return res.json(tickets);
 }
 
@@ -177,28 +241,31 @@ export async function criar(req: Request, res: Response) {
       userId: req.userId,
       changes: dados,
     });
+    if (dados.scheduledAt) {
+      await registrarNotificacao({
+        clientId: criado.clientId,
+        ticketId: criado.id,
+        type: "AGENDAMENTO",
+        mensagem: `Seu atendimento foi agendado para ${new Date(dados.scheduledAt).toLocaleString("pt-BR")}.`,
+      }, tx);
+    }
+    if (dados.userId && criado.userId) {
+      const tecnico = await tx.user.findUniqueOrThrow({
+        where: { id: criado.userId },
+        select: { name: true },
+      });
+      await registrarNotificacao({
+        clientId: criado.clientId,
+        ticketId: criado.id,
+        type: "TECNICO_ATRIBUIDO",
+        mensagem: `O técnico ${tecnico.name} foi designado para o seu atendimento.`,
+      }, tx);
+    }
     return tx.ticket.findUniqueOrThrow({
       where: { id: criado.id },
       include: includeDetalhe,
     });
   });
-
-  // Fora da transação — é I/O externo (canal de envio), não deve travar
-  // nem reverter a criação do chamado se falhar.
-  if (dados.scheduledAt) {
-    await registrarNotificacao({
-      clientId: ticket.clientId,
-      type: "AGENDAMENTO",
-      mensagem: `Seu atendimento foi agendado para ${new Date(dados.scheduledAt).toLocaleString("pt-BR")}.`,
-    });
-  }
-  if (dados.userId && ticket.user) {
-    await registrarNotificacao({
-      clientId: ticket.clientId,
-      type: "TECNICO_ATRIBUIDO",
-      mensagem: `O técnico ${ticket.user.name} foi designado para o seu atendimento.`,
-    });
-  }
 
   return res.status(201).json(ticket);
 }
@@ -212,16 +279,35 @@ export async function atualizar(req: Request, res: Response) {
   const dadosAtualizados: Record<string, unknown> = { ...dados };
   if (dados.isPreventiveMaintenance !== undefined || dados.maintenanceReturnDays !== undefined) {
     const isPreventive = dados.isPreventiveMaintenance ?? atual.isPreventiveMaintenance;
-    const dias = dados.maintenanceReturnDays ?? atual.maintenanceReturnDays ?? null;
+    const dias = dados.maintenanceReturnDays !== undefined
+      ? dados.maintenanceReturnDays
+      : atual.maintenanceReturnDays;
     dadosAtualizados.maintenanceNextAt = isPreventive && atual.completedAt
       ? calcularProximaManutencao(atual.completedAt, dias)
       : null;
   }
+  const novaDataRetorno = dadosAtualizados.maintenanceNextAt;
+  const dataRetornoMudou =
+    Object.prototype.hasOwnProperty.call(dadosAtualizados, "maintenanceNextAt") &&
+    (novaDataRetorno === null
+      ? atual.maintenanceNextAt !== null
+      : novaDataRetorno instanceof Date &&
+        novaDataRetorno.getTime() !== (atual.maintenanceNextAt?.getTime() ?? null));
 
   const { before, after } = diffCampos(atual, dadosAtualizados);
 
   const ticket = await prisma.$transaction(async (tx) => {
     await tx.ticket.update({ where: { id: atual.id }, data: dadosAtualizados });
+    if (dataRetornoMudou) {
+      await tx.notificationLog.updateMany({
+        where: {
+          ticketId: atual.id,
+          type: "LEMBRETE_MANUTENCAO",
+          resolution: false,
+        },
+        data: { resolution: true },
+      });
+    }
 
     // Só grava auditoria se algo de fato mudou (evita ruído em PATCHs vazios).
     if (Object.keys(after).length > 0) {
@@ -291,20 +377,29 @@ export async function atualizarStatus(req: Request, res: Response) {
         note,
       },
     });
+    if (status === "CONCLUIDO") {
+      await registrarNotificacao({
+        clientId: atual.clientId,
+        serviceTypeId: atual.serviceTypeId,
+        ticketId: atual.id,
+        type: "CHAMADO_CONCLUIDO",
+        mensagem: "Seu atendimento foi concluído.",
+      }, tx);
+    } else if (atual.status === "CONCLUIDO") {
+      await tx.notificationLog.updateMany({
+        where: {
+          ticketId: atual.id,
+          type: "LEMBRETE_MANUTENCAO",
+          resolution: false,
+        },
+        data: { resolution: true },
+      });
+    }
     return tx.ticket.findUniqueOrThrow({
       where: { id: atual.id },
       include: includeDetalhe,
     });
   });
-
-  if (status === "CONCLUIDO") {
-    await registrarNotificacao({
-      clientId: atual.clientId,
-      serviceTypeId: atual.serviceTypeId,
-      type: "CHAMADO_CONCLUIDO",
-      mensagem: "Seu atendimento foi concluído.",
-    });
-  }
 
   return res.json(ticket);
 }
@@ -339,19 +434,19 @@ export async function atribuir(req: Request, res: Response) {
         after: tecnicoDepois?.name ?? "Sem técnico",
       },
     });
+    if (userId && tecnicoDepois) {
+      await registrarNotificacao({
+        clientId: atual.clientId,
+        ticketId: (req.params.id as string),
+        type: "TECNICO_ATRIBUIDO",
+        mensagem: `O técnico ${tecnicoDepois.name} foi designado para o seu atendimento.`,
+      }, tx);
+    }
     return tx.ticket.findUniqueOrThrow({
       where: { id: (req.params.id as string) },
       include: includeDetalhe,
     });
   });
-
-  if (userId && tecnicoDepois) {
-    await registrarNotificacao({
-      clientId: atual.clientId,
-      type: "TECNICO_ATRIBUIDO",
-      mensagem: `O técnico ${tecnicoDepois.name} foi designado para o seu atendimento.`,
-    });
-  }
 
   return res.json(ticket);
 }
@@ -375,19 +470,19 @@ export async function reagendar(req: Request, res: Response) {
         after: scheduledAt?.toISOString() ?? null,
       },
     });
+    if (scheduledAt) {
+      await registrarNotificacao({
+        clientId: atual.clientId,
+        ticketId: (req.params.id as string),
+        type: "AGENDAMENTO",
+        mensagem: `Seu atendimento foi reagendado para ${scheduledAt.toLocaleString("pt-BR")}.`,
+      }, tx);
+    }
     return tx.ticket.findUniqueOrThrow({
       where: { id: (req.params.id as string) },
       include: includeDetalhe,
     });
   });
-
-  if (scheduledAt) {
-    await registrarNotificacao({
-      clientId: atual.clientId,
-      type: "AGENDAMENTO",
-      mensagem: `Seu atendimento foi reagendado para ${scheduledAt.toLocaleString("pt-BR")}.`,
-    });
-  }
 
   return res.json(ticket);
 }

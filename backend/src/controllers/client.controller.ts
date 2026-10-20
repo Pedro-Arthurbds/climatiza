@@ -28,7 +28,35 @@ const atualizarClientSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const buscaClientesSchema = z.object({
+  search: z.string().trim().min(2).max(100),
+});
+
 export async function listar(req: Request, res: Response) {
+  if (req.query.search !== undefined) {
+    const { search } = buscaClientesSchema.parse({ search: req.query.search });
+    const clients = await prisma.client.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        addresses: {
+          select: { id: true, street: true, number: true, city: true },
+        },
+      },
+      orderBy: { name: "asc" },
+      take: 6,
+    });
+    return res.json(clients);
+  }
+
   const somenteAtivos = req.query.all !== "true";
   const clients = await prisma.client.findMany({
     where: somenteAtivos ? { isActive: true } : undefined,
