@@ -130,19 +130,9 @@ export interface NotaChamado {
   user: { id: string; name: string } | null;
 }
 
-export interface AnexoChamado {
-  id: string;
-  filename: string;
-  url: string;
-  mimeType: string | null;
-  createdAt: string;
-  uploadedBy: { id: string; name: string } | null;
-}
-
 export interface ChamadoDetalhe extends Chamado {
   statusHistory: HistoricoStatus[];
   notes: NotaChamado[];
-  attachments: AnexoChamado[];
   auditLog: AuditLogEntry[];
 }
 

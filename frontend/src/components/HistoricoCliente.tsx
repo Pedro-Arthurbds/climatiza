@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa6";
 import { api } from "../api/client";
 import { useResponsivePageSize } from "../hooks/useResponsivePageSize";
 import type { Chamado, Cliente } from "../types";
 import { formatarDataHoraBrasil } from "../utils/dataBrasil";
+import { obterLinkWhatsApp } from "../utils/whatsapp";
 import { StatusBadge } from "./StatusBadge";
 
 // Painel lateral com o histórico de chamados de um cliente.
@@ -74,9 +76,22 @@ export function HistoricoCliente({
             <h2 className="mt-1 break-words text-lg font-extrabold tracking-tight">
               {cliente.name}
             </h2>
-            <p className="mt-1 text-sm text-inkMuted">
-              {cliente.phone} · {cliente.email}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-inkMuted">
+              <span>{cliente.phone}</span>
+              {cliente.phone && (
+                <a
+                  href={obterLinkWhatsApp(cliente.phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded bg-[#25D366]/15 px-2 py-0.5 text-xs font-semibold text-[#128C7E] hover:bg-[#25D366]/25 transition"
+                  title="Conversar no WhatsApp"
+                >
+                  <FaWhatsapp className="text-sm text-[#25D366]" />
+                  WhatsApp
+                </a>
+              )}
+              <span>· {cliente.email}</span>
+            </div>
           </div>
           <button
             onClick={onFechar}

@@ -49,14 +49,6 @@ const notaSchema = z.object({
   content: z.string().min(1),
 });
 
-// Anexo recebe URL, não binário — o upload depende de definir um provedor
-// de storage (S3, Cloudinary...). Trocar isso não exige mudar o schema.
-const anexoSchema = z.object({
-  filename: z.string().min(1),
-  url: z.string().url(),
-  mimeType: z.string().min(1).optional(),
-});
-
 const filtrosListaChamadosSchema = z.object({
   status: z.enum(["ABERTO", "EM_ANDAMENTO", "CONCLUIDO", "CANCELADO"]).optional(),
   userId: z.string().min(1).optional(),
@@ -83,10 +75,6 @@ const includeDetalhe = {
   },
   notes: {
     include: { user: { select: { id: true, name: true } } },
-    orderBy: { createdAt: "desc" },
-  },
-  attachments: {
-    include: { uploadedBy: { select: { id: true, name: true } } },
     orderBy: { createdAt: "desc" },
   },
 } as const;
@@ -531,31 +519,6 @@ export async function removerNota(req: Request, res: Response) {
   }
 
   await prisma.ticketNote.delete({ where: { id: nota.id } });
-  return res.status(204).send();
-}
-
-// --- Anexos ---
-
-export async function criarAnexo(req: Request, res: Response) {
-  const dados = anexoSchema.parse(req.body);
-  const ticket = await exigirAcessoAoChamado(req, (req.params.id as string));
-  const anexo = await prisma.ticketAttachment.create({
-    data: { ...dados, ticketId: ticket.id, uploadedById: req.userId },
-    include: { uploadedBy: { select: { id: true, name: true } } },
-  });
-  return res.status(201).json(anexo);
-}
-
-export async function removerAnexo(req: Request, res: Response) {
-  const anexo = await prisma.ticketAttachment.findUniqueOrThrow({
-    where: { id: (req.params.anexoId as string) },
-  });
-
-  if (anexo.ticketId !== (req.params.id as string)) {
-    throw new AppError("Anexo não encontrado neste chamado", 404);
-  }
-
-  await prisma.ticketAttachment.delete({ where: { id: anexo.id } });
   return res.status(204).send();
 }
 

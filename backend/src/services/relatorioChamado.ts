@@ -50,12 +50,6 @@ export interface DadosRelatorioChamado {
       user: { name: string } | null;
     }[];
     notes: { content: string; createdAt: Date; user: { name: string } | null }[];
-    attachments: {
-      filename: string;
-      url: string;
-      createdAt: Date;
-      uploadedBy: { name: string } | null;
-    }[];
   };
   auditLog: {
     action: string;
@@ -551,41 +545,6 @@ export function gerarRelatorioChamadoPdf(
         doc.x = MARGEM;
       });
     }
-  }
-
-  // --- Anexos ---
-  titulo(doc, "Anexos");
-  if (t.attachments.length === 0) {
-    vazio(doc, "Nenhum anexo registrado.");
-  } else {
-    t.attachments.forEach((a) => {
-      doc.font("Helvetica-Bold").fontSize(9.5);
-      const h1 = doc.heightOfString(a.filename, { width: w });
-      doc.font("Helvetica").fontSize(8.5);
-      const h2 = doc.heightOfString(a.url, { width: w });
-      garantirEspaco(doc, h1 + h2 + 24);
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(9.5)
-        .fillColor(COR.tinta)
-        .text(a.filename, MARGEM, doc.y, { width: w });
-      doc
-        .font("Helvetica")
-        .fontSize(8.5)
-        .fillColor("#2B5F9E")
-        .text(a.url, MARGEM, doc.y, { width: w, link: a.url, underline: true });
-      doc
-        .font("Helvetica")
-        .fontSize(8)
-        .fillColor(COR.suave)
-        .text(
-          `Enviado por ${a.uploadedBy?.name ?? "Sistema"} em ${fmtDataHora(a.createdAt)}`,
-          MARGEM,
-          doc.y,
-          { width: w }
-        );
-      doc.moveDown(0.7);
-    });
   }
 
   // --- Rodapé em todas as páginas (precisa ser depois, pra saber o total) ---

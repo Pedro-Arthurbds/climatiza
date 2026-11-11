@@ -12,7 +12,7 @@ const app = express();
 const isProducao = process.env.NODE_ENV === "production";
 const origensConfiguradas = (process.env.CORS_ORIGIN ?? "")
   .split(",")
-  .map((origem) => origem.trim())
+  .map((origem) => origem.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
 const origensPadraoDev = [

@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa6";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useAssinatura } from "../context/SubscriptionContext";
 import { ChamadoDrawer } from "../components/ChamadoDrawer";
 import { HistoricoCliente } from "../components/HistoricoCliente";
 import type { Cliente } from "../types";
+import { obterLinkWhatsApp } from "../utils/whatsapp";
 
 const enderecoVazio = {
   street: "",
@@ -360,7 +362,22 @@ export function Clientes() {
                     </button>
                   </h3>
                   <p className="mt-1 break-all text-sm text-inkMuted">{cliente.email}</p>
-                  <p className="mt-1 text-sm text-inkMuted">{cliente.phone}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-inkMuted">{cliente.phone}</span>
+                    {cliente.phone && (
+                      <a
+                        href={obterLinkWhatsApp(cliente.phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 rounded bg-[#25D366]/15 px-2 py-0.5 text-xs font-semibold text-[#128C7E] hover:bg-[#25D366]/25 transition"
+                        title="Conversar no WhatsApp"
+                      >
+                        <FaWhatsapp className="text-sm text-[#25D366]" />
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
                   <p className="mt-2 text-xs text-inkMuted">
                     {cliente.doc} · {cliente.addresses.length} endereço(s)
                   </p>
@@ -417,7 +434,22 @@ export function Clientes() {
                 </td>
                 <td className="px-4 py-3 text-inkMuted">
                   <p>{c.email}</p>
-                  <p className="mt-1">{c.phone}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span>{c.phone}</span>
+                    {c.phone && (
+                      <a
+                        href={obterLinkWhatsApp(c.phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 rounded bg-[#25D366]/15 px-2 py-0.5 text-xs font-semibold text-[#128C7E] hover:bg-[#25D366]/25 transition"
+                        title="Conversar no WhatsApp"
+                      >
+                        <FaWhatsapp className="text-sm text-[#25D366]" />
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-inkMuted">{c.doc}</td>
                 <td className="px-4 py-3 text-inkMuted">
