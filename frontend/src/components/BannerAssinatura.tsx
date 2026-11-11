@@ -16,7 +16,7 @@ export function BannerAssinatura() {
     if (!erro) return null;
     return (
       <div className="mx-auto w-full max-w-[1500px] px-4 pt-4 sm:px-6 lg:px-8">
-        <p className="rounded-xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert">
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert">
           {erro}
         </p>
       </div>
@@ -26,8 +26,8 @@ export function BannerAssinatura() {
   if (assinatura.status === "EM_ATRASO") {
     return (
       <div className="mx-auto w-full max-w-[1500px] px-4 pt-4 sm:px-6 lg:px-8">
-        <p className="rounded-xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm font-medium text-[#8c3d35]" role="alert">
-          Mensalidade vencida há {assinatura.diasAtraso}{" "}
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="alert">
+          ⚠️ Mensalidade vencida há {assinatura.diasAtraso}{" "}
           {assinatura.diasAtraso === 1 ? "dia" : "dias"}; regularize até{" "}
           {dataLimite(assinatura.paidUntil, assinatura.graceDays)} para evitar a suspensão.
         </p>
@@ -38,8 +38,8 @@ export function BannerAssinatura() {
   if (assinatura.status === "SUSPENSA" && assinatura.mode === "READ_ONLY") {
     return (
       <div className="mx-auto w-full max-w-[1500px] px-4 pt-4 sm:px-6 lg:px-8">
-        <p className="rounded-xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm font-medium text-[#8c3d35]" role="alert">
-          Assinatura suspensa: o sistema está em modo somente leitura até a regularização.
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900" role="alert">
+          🚫 Assinatura suspensa: o sistema está em modo somente leitura até a regularização.
         </p>
       </div>
     );

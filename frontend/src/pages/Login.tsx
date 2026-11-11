@@ -35,48 +35,48 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f6f1e8] px-4 py-10">
-      <div className="w-full max-w-6xl overflow-hidden rounded-[30px] border border-[#d5cab2] bg-[#fffdf9]/95 shadow-[0_28px_60px_rgba(31,42,42,0.12)] backdrop-blur-xl">
-        <div className="grid md:grid-cols-[1.12fr_0.88fr]">
-          <div className="flex flex-col justify-between bg-[radial-gradient(circle_at_top_left,_rgba(47,79,72,0.14),_transparent_32%),linear-gradient(180deg,_#edf2ee_0%,_#f9f3ea_100%)] p-8 lg:p-10">
+    <div className="flex min-h-screen items-center justify-center bg-base px-3 py-4 sm:px-4 sm:py-10">
+      <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-border bg-surface shadow-panel">
+        <div className="grid md:grid-cols-[1.1fr_0.9fr]">
+          <div className="flex flex-col justify-between bg-gradient-to-br from-[#0b1320] via-[#111c2e] to-[#1e293b] p-6 text-white sm:p-8 md:p-10">
             <div>
-              <div className="mb-6">
-                <Logo variant="login" subtitle="Sistema" />
+              <div className="mb-4 sm:mb-8">
+                <Logo variant="sidebar" subtitle="Sistema" />
               </div>
 
-              <h1 className="max-w-md text-4xl leading-none text-[#1f2a2a] lg:text-5xl">
+              <h1 className="max-w-md text-2xl font-bold leading-tight text-white sm:text-3xl md:text-4xl">
                 Operação mais clara para climatizar cada atendimento.
               </h1>
-              <p className="mt-4 max-w-md text-base leading-7 text-[#5f6a62]">
-                Centralize chamados, agenda, clientes e manutenções com uma visão mais objetiva do dia a dia técnico.
+              <p className="mt-3 hidden max-w-md text-sm leading-relaxed text-[#94a3b8] md:block">
+                Centralize chamados, agenda, clientes e manutenções com precisão técnica e agilidade no dia a dia.
               </p>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-[#d9cbb4] bg-[#fffdf9] p-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[#5f6a62]">Agenda</p>
-                <p className="mt-2 text-lg font-bold text-[#1f2a2a]">Sem travas</p>
+            <div className="mt-8 hidden gap-3 md:grid md:grid-cols-3">
+              <div className="rounded-xl border border-[#334155] bg-[#0b1320]/60 p-3">
+                <p className="text-xs font-medium text-[#94a3b8]">Agenda</p>
+                <p className="mt-1 text-sm font-bold text-white">Sem conflitos</p>
               </div>
-              <div className="rounded-2xl border border-[#d9cbb4] bg-[#fffdf9] p-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[#5f6a62]">Chamados</p>
-                <p className="mt-2 text-lg font-bold text-[#1f2a2a]">Visão total</p>
+              <div className="rounded-xl border border-[#334155] bg-[#0b1320]/60 p-3">
+                <p className="text-xs font-medium text-[#94a3b8]">Chamados</p>
+                <p className="mt-1 text-sm font-bold text-white">Visão total</p>
               </div>
-              <div className="rounded-2xl border border-[#d9cbb4] bg-[#fffdf9] p-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[#5f6a62]">SLA</p>
-                <p className="mt-2 text-lg font-bold text-[#1f2a2a]">Mais controle</p>
+              <div className="rounded-xl border border-[#334155] bg-[#0b1320]/60 p-3">
+                <p className="text-xs font-medium text-[#94a3b8]">SLA</p>
+                <p className="mt-1 text-sm font-bold text-white">No prazo</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center bg-[#f9f3ea] p-6 lg:p-10">
-            <form onSubmit={handleSubmit} className="w-full max-w-md rounded-[26px] border border-[#d9cbb4] bg-[#fffdf9] p-6 shadow-[0_18px_40px_rgba(31,42,42,0.08)]">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#5f6a62]">Acesso</p>
-              <p className="mt-2 text-3xl text-[#1f2a2a]">Entrar</p>
-              <p className="mt-1 text-sm text-[#5f6a62]">Use suas credenciais para continuar.</p>
+          <div className="flex items-center justify-center bg-surfaceAlt/40 p-5 sm:p-8 lg:p-10">
+            <form onSubmit={handleSubmit} className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-subtle sm:p-7">
+              <p className="text-xs font-semibold text-accent">Acesso ao sistema</p>
+              <h2 className="mt-1 text-2xl font-bold text-ink">Entrar</h2>
+              <p className="mt-1 text-xs text-inkMuted">Informe suas credenciais para continuar.</p>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-5 space-y-3.5">
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-medium text-[#5f6a62]">E-mail</span>
+                  <span className="mb-1 block text-xs font-medium text-ink">E-mail</span>
                   <input
                     type="email"
                     required
@@ -88,7 +88,7 @@ export function Login() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-medium text-[#5f6a62]">Senha</span>
+                  <span className="mb-1 block text-xs font-medium text-ink">Senha</span>
                   <input
                     type="password"
                     required
@@ -100,12 +100,12 @@ export function Login() {
                 </label>
               </div>
 
-              {erro && <p className="mt-4 text-sm text-status-cancelado">{erro}</p>}
+              {erro && <p className="mt-3 text-xs font-medium text-status-cancelado">{erro}</p>}
 
               <button
                 type="submit"
                 disabled={carregando}
-                className="mt-6 w-full rounded-xl bg-[#2f4f48] px-3 py-3 text-sm font-bold text-[#f8f5f0] transition hover:bg-[#24413d] disabled:opacity-60"
+                className="mt-6 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accentMuted disabled:opacity-50"
               >
                 {carregando ? 'Entrando...' : 'Entrar no sistema'}
               </button>

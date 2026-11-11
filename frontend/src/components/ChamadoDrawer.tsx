@@ -292,8 +292,6 @@ export function ChamadoDrawer({
               />
             )}
 
-            <SecaoWhatsApp chamado={chamado} />
-
             {ehAdmin && !somenteLeitura && (
               <button
                 onClick={() => setEditando((v) => !v)}
@@ -317,15 +315,15 @@ export function ChamadoDrawer({
                   <Linha
                     rotulo="Telefone"
                     valor={
-                      <span className="inline-flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2">
                         <span>{chamado.client.phone}</span>
                         {chamado.client.phone && (
                           <a
                             href={obterLinkWhatsApp(chamado.client.phone)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded bg-[#25D366]/15 px-2 py-0.5 text-xs font-semibold text-[#128C7E] hover:bg-[#25D366]/25 transition"
-                            title="Conversar com este cliente no WhatsApp"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#128C7E] hover:underline"
+                            title="Abrir WhatsApp com este cliente"
                           >
                             <FaWhatsapp className="text-sm text-[#25D366]" />
                             Conversar
@@ -408,9 +406,9 @@ function AcoesRapidas({
   const [erroData, setErroData] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-border bg-surfaceAlt p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-surfaceAlt/60 p-4">
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase text-inkMuted">Status</p>
+        <p className="mb-2 text-xs font-semibold text-inkMuted">Status</p>
         <div className="flex flex-wrap gap-2">
           {statusOptions
             .filter((s) => s !== chamado.status)
@@ -420,7 +418,7 @@ function AcoesRapidas({
                 onClick={() =>
                   executar(() => api.patch(`/chamados/${chamado.id}/status`, { status: s }))
                 }
-                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:border-accent hover:text-accent"
+                className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:border-accent hover:text-accent transition-colors"
               >
                 {rotuloStatus[s]}
               </button>
@@ -431,7 +429,7 @@ function AcoesRapidas({
       {ehAdmin && (
         <>
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase text-inkMuted">
+            <p className="mb-2 text-xs font-semibold text-inkMuted">
               Técnico responsável
             </p>
             <select
@@ -455,7 +453,7 @@ function AcoesRapidas({
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase text-inkMuted">
+            <p className="mb-2 text-xs font-semibold text-inkMuted">
               Alterar data e hora
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -504,6 +502,23 @@ function AcoesRapidas({
           </div>
         </>
       )}
+
+      {chamado.client.phone && (
+        <div className="border-t border-border pt-3">
+          <p className="mb-2 text-xs font-semibold text-inkMuted">
+            WhatsApp do cliente
+          </p>
+          <a
+            href={obterLinkMensagemChamado(chamado)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#1ebe5d] transition"
+          >
+            <FaWhatsapp className="text-sm" />
+            <span>{obterRotuloMensagemChamado(chamado)}</span>
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -526,9 +541,9 @@ function FormEdicao({
   const [addressId, setAddressId] = useState(chamado.addressId);
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-border bg-surfaceAlt p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-surfaceAlt/60 p-4">
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase text-inkMuted">
+        <span className="mb-1 block text-xs font-medium text-inkMuted">
           Endereço de atendimento
         </span>
         <select
@@ -545,7 +560,7 @@ function FormEdicao({
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase text-inkMuted">
+        <span className="mb-1 block text-xs font-medium text-inkMuted">
           Tipo de serviço
         </span>
         <select
@@ -562,7 +577,7 @@ function FormEdicao({
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase text-inkMuted">
+        <span className="mb-1 block text-xs font-medium text-inkMuted">
           Marca do equipamento
         </span>
         <input
@@ -573,7 +588,7 @@ function FormEdicao({
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase text-inkMuted">
+        <span className="mb-1 block text-xs font-medium text-inkMuted">
           Local do equipamento
         </span>
         <input
@@ -584,7 +599,7 @@ function FormEdicao({
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase text-inkMuted">
+        <span className="mb-1 block text-xs font-medium text-inkMuted">
           Problema relatado
         </span>
         <textarea
@@ -700,8 +715,8 @@ function Overlay({
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase text-inkMuted">{titulo}</p>
-      <div className="flex flex-col gap-1 rounded-md border border-border bg-surfaceAlt p-4">
+      <p className="mb-2 text-xs font-semibold text-inkMuted">{titulo}</p>
+      <div className="flex flex-col gap-1 rounded-lg border border-border bg-surfaceAlt/60 p-4">
         {children}
       </div>
     </div>
@@ -717,95 +732,52 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
   );
 }
 
-function SecaoWhatsApp({ chamado }: { chamado: ChamadoDetalhe }) {
-  if (!chamado.client.phone) return null;
+function obterRotuloMensagemChamado(chamado: ChamadoDetalhe): string {
+  if (chamado.status === "CONCLUIDO") {
+    return "Avisar conclusão via WhatsApp";
+  }
+  if (chamado.scheduledAt) {
+    return "Avisar agendamento via WhatsApp";
+  }
+  return `Avisar status (${rotuloStatus[chamado.status]}) via WhatsApp`;
+}
 
+function obterLinkMensagemChamado(chamado: ChamadoDetalhe): string {
   const enderecoResumido = `${chamado.address.street}, ${chamado.address.number} — ${chamado.address.neighborhood}, ${chamado.address.city}`;
 
-  return (
-    <div className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#128C7E]">
-          <FaWhatsapp className="text-base text-[#25D366]" />
-          Notificar Cliente via WhatsApp
-        </span>
-        <span className="text-xs text-inkMuted">{chamado.client.phone}</span>
-      </div>
-      <p className="mb-3 text-xs text-inkMuted">
-        Envie mensagens formatadas com 1 clique para o cliente direto pelo WhatsApp Web ou app.
-      </p>
+  if (chamado.status === "CONCLUIDO") {
+    return obterLinkWhatsApp(
+      chamado.client.phone,
+      gerarMensagemConclusao({
+        clienteNome: chamado.client.name,
+        protocolo: chamado.id,
+        tipoServico: chamado.serviceType?.name,
+      })
+    );
+  }
 
-      <div className="flex flex-wrap gap-2">
-        {chamado.scheduledAt && (
-          <a
-            href={obterLinkWhatsApp(
-              chamado.client.phone,
-              gerarMensagemAgendamento({
-                clienteNome: chamado.client.name,
-                protocolo: chamado.id,
-                tipoServico: chamado.serviceType?.name,
-                dataHora: formatarDataHoraBrasil(chamado.scheduledAt),
-                tecnicoNome: chamado.user?.name,
-                endereco: enderecoResumido,
-              })
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#1ebe5d] transition"
-          >
-            <FaWhatsapp className="text-sm" />
-            Avisar Agendamento
-          </a>
-        )}
+  if (chamado.scheduledAt) {
+    return obterLinkWhatsApp(
+      chamado.client.phone,
+      gerarMensagemAgendamento({
+        clienteNome: chamado.client.name,
+        protocolo: chamado.id,
+        tipoServico: chamado.serviceType?.name,
+        dataHora: formatarDataHoraBrasil(chamado.scheduledAt),
+        tecnicoNome: chamado.user?.name,
+        endereco: enderecoResumido,
+      })
+    );
+  }
 
-        {chamado.status === "CONCLUIDO" ? (
-          <a
-            href={obterLinkWhatsApp(
-              chamado.client.phone,
-              gerarMensagemConclusao({
-                clienteNome: chamado.client.name,
-                protocolo: chamado.id,
-                tipoServico: chamado.serviceType?.name,
-              })
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#128C7E] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition"
-          >
-            <FaWhatsapp className="text-sm" />
-            Avisar Conclusão
-          </a>
-        ) : (
-          <a
-            href={obterLinkWhatsApp(
-              chamado.client.phone,
-              gerarMensagemStatus({
-                clienteNome: chamado.client.name,
-                protocolo: chamado.id,
-                tipoServico: chamado.serviceType?.name,
-                statusRotulo: rotuloStatus[chamado.status],
-                tecnicoNome: chamado.user?.name,
-              })
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md border border-[#25D366]/40 bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:border-[#25D366] hover:text-[#128C7E] transition"
-          >
-            <FaWhatsapp className="text-sm text-[#25D366]" />
-            Avisar Status ({rotuloStatus[chamado.status]})
-          </a>
-        )}
-
-        <a
-          href={obterLinkWhatsApp(chamado.client.phone)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-inkMuted hover:border-inkMuted hover:text-ink transition"
-        >
-          <FaWhatsapp className="text-sm text-[#25D366]" />
-          Conversar
-        </a>
-      </div>
-    </div>
+  return obterLinkWhatsApp(
+    chamado.client.phone,
+    gerarMensagemStatus({
+      clienteNome: chamado.client.name,
+      protocolo: chamado.id,
+      tipoServico: chamado.serviceType?.name,
+      statusRotulo: rotuloStatus[chamado.status],
+      tecnicoNome: chamado.user?.name,
+    })
   );
 }

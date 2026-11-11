@@ -15,11 +15,11 @@ const rotuloTipo: Record<TipoNotificacao, string> = {
 };
 
 const corTipo: Record<TipoNotificacao, string> = {
-  MANUTENCAO_VENCIDA: "border-status-cancelado/30 bg-status-cancelado/10 text-status-cancelado",
-  LEMBRETE_MANUTENCAO: "border-status-aberto/30 bg-status-aberto/10 text-status-aberto",
-  AGENDAMENTO: "border-status-andamento/30 bg-status-andamento/10 text-status-andamento",
-  TECNICO_ATRIBUIDO: "border-accent/30 bg-accent/10 text-accent",
-  CHAMADO_CONCLUIDO: "border-status-concluido/30 bg-status-concluido/10 text-status-concluido",
+  MANUTENCAO_VENCIDA: "border-rose-200 bg-rose-50/70 text-rose-800",
+  LEMBRETE_MANUTENCAO: "border-amber-200 bg-amber-50/70 text-amber-800",
+  AGENDAMENTO: "border-sky-200 bg-sky-50/70 text-sky-800",
+  TECNICO_ATRIBUIDO: "border-slate-200 bg-slate-50 text-slate-800",
+  CHAMADO_CONCLUIDO: "border-emerald-200 bg-emerald-50/70 text-emerald-800",
 };
 
 function formatarData(valor: string) {
@@ -110,12 +110,11 @@ export function Notificacoes() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Comunicação</p>
-          <h1 className="mt-2 text-4xl text-ink">Notificações</h1>
-          <p className="mt-2 text-sm text-inkMuted">
-            Avisos internos sobre agendamentos, técnicos, conclusões e manutenções; não são enviados ao cliente.
+          <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Notificações Internas</h1>
+          <p className="mt-0.5 text-xs text-inkMuted">
+            Avisos operacionais sobre agendamentos, técnicos e manutenções de HVAC.
           </p>
         </div>
 
@@ -123,7 +122,7 @@ export function Notificacoes() {
           <button
             onClick={verificarAgora}
             disabled={verificando}
-            className="rounded-xl border border-border bg-[#fffdf9] px-3 py-2 text-xs font-semibold text-inkMuted hover:border-[#2f4f48] hover:text-[#2f4f48] disabled:opacity-50"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-ink hover:border-accent hover:text-accent transition disabled:opacity-50 self-start sm:self-auto"
           >
             {verificando ? "Verificando..." : "Verificar retornos próximos"}
           </button>
@@ -131,19 +130,19 @@ export function Notificacoes() {
       </div>
 
       {mensagemErro && (
-        <p className="rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert" aria-live="assertive">
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-800" role="alert" aria-live="assertive">
           {mensagemErro}
         </p>
       )}
 
       {mensagemSucesso && (
-        <p className="rounded-2xl border border-[#94b89a] bg-[#dff0e2] px-4 py-3 text-sm text-[#2d6646]" role="status" aria-live="polite">
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800" role="status" aria-live="polite">
           {mensagemSucesso}
         </p>
       )}
 
-      <div className="rounded-[24px] border border-border bg-[#fffdf9] p-4 shadow-panel">
-        <div className="mb-4 flex gap-2">
+      <div className="rounded-xl border border-border bg-surface p-4 shadow-subtle">
+        <div className="mb-4 flex gap-1.5">
           {(["pendentes", "resolvidas"] as const).map((a) => (
             <button
               key={a}
@@ -151,8 +150,8 @@ export function Notificacoes() {
                 setAba(a);
                 setPagina(1);
               }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold capitalize ${
-                aba === a ? "border-[#2f4f48] bg-[#2f4f48] text-[#f7f2ea]" : "border-border bg-surfaceAlt text-inkMuted"
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium capitalize transition ${
+                aba === a ? "border-accent bg-accent text-white" : "border-border bg-surfaceAlt text-inkMuted hover:border-accent/40"
               }`}
             >
               {a}
@@ -161,21 +160,21 @@ export function Notificacoes() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {carregando && <p className="rounded-2xl border border-border bg-[#f9f4eb] p-6 text-center text-sm text-inkMuted">Carregando notificações...</p>}
+          {carregando && <p className="rounded-xl border border-border bg-surfaceAlt/60 p-6 text-center text-xs text-inkMuted">Carregando notificações...</p>}
           {!carregando && notificacoes.length === 0 && (
-            <div className="rounded-2xl border border-border bg-[#f9f4eb] p-6 text-center text-sm text-inkMuted">
-              <p className="text-base font-medium text-ink">Nenhuma notificação {aba === "pendentes" ? "pendente" : "resolvida"}.</p>
-              <p className="mt-2">Tudo em dia por enquanto.</p>
+            <div className="rounded-xl border border-border bg-surfaceAlt/60 p-6 text-center text-xs text-inkMuted">
+              <p className="text-sm font-semibold text-ink">Nenhuma notificação {aba === "pendentes" ? "pendente" : "resolvida"}.</p>
+              <p className="mt-1">Tudo em dia com as manutenções e chamados.</p>
             </div>
           )}
           {notificacoes.map((n) => (
             <div
               key={n.id}
-              className={`flex items-start justify-between gap-4 rounded-[20px] border p-4 ${corTipo[n.type]}`}
+              className={`flex items-start justify-between gap-4 rounded-xl border p-4 ${corTipo[n.type]}`}
             >
               <div>
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em]">{rotuloTipo[n.type]}</span>
+                  <span className="text-xs font-semibold">{rotuloTipo[n.type]}</span>
                   {n.serviceType && (
                     <span className="text-xs text-inkMuted">· {n.serviceType.name}</span>
                   )}
@@ -198,7 +197,7 @@ export function Notificacoes() {
                 <button
                   onClick={() => resolver(n.id)}
                   disabled={resolvendoId === n.id}
-                  className="shrink-0 rounded-xl bg-[#2f4f48] px-3 py-2 text-xs font-semibold text-[#f9f5f0] hover:bg-[#24413d] disabled:opacity-50"
+                  className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accentMuted transition disabled:opacity-50"
                 >
                   {resolvendoId === n.id ? 'Resolvendo...' : 'Marcar resolvido'}
                 </button>

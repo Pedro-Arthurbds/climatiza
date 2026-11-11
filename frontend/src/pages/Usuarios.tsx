@@ -91,33 +91,33 @@ export function Usuarios() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Acesso</p>
-          <h1 className="mt-2 text-4xl text-ink">Usuários</h1>
+          <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Equipe e Acessos</h1>
+          <p className="mt-0.5 text-xs text-inkMuted">Gestão de técnicos de campo e administradores da Climatiza.</p>
         </div>
         {!somenteLeitura && <button
           onClick={() => setMostrarForm((v) => !v)}
-          className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] shadow-[0_10px_25px_rgba(47,79,72,0.2)] transition hover:bg-[#24413d]"
+          className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted transition self-start sm:self-auto"
         >
-          {mostrarForm ? "Fechar" : "Novo usuário"}
+          {mostrarForm ? "Fechar formulário" : "+ Novo usuário"}
         </button>}
       </div>
 
       {mensagemErro && (
-        <p className="rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert" aria-live="assertive">
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-800" role="alert" aria-live="assertive">
           {mensagemErro}
         </p>
       )}
 
       {mensagemSucesso && (
-        <p className="rounded-2xl border border-[#94b89a] bg-[#dff0e2] px-4 py-3 text-sm text-[#2d6646]" role="status" aria-live="polite">
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800" role="status" aria-live="polite">
           {mensagemSucesso}
         </p>
       )}
 
       {mostrarForm && !somenteLeitura && (
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 rounded-[24px] border border-border bg-[#fffdf9] p-6 shadow-panel">
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-surface p-5 shadow-subtle">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-inkMuted">Nome</span>
             <input required value={name} onChange={(e) => setName(e.target.value)} className="campo-input" />
@@ -138,47 +138,51 @@ export function Usuarios() {
             </select>
           </label>
           <div className="col-span-2 flex justify-end">
-            <button type="submit" disabled={enviando} className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] hover:bg-[#24413d] disabled:opacity-50">
+            <button type="submit" disabled={enviando} className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted disabled:opacity-50">
               {enviando ? "Salvando..." : "Salvar usuário"}
             </button>
           </div>
         </form>
       )}
 
-      <div className="overflow-hidden rounded-[20px] border border-border bg-[#fffdf9] shadow-panel">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-subtle">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[#efe6db] text-[10px] uppercase tracking-[0.16em] text-inkMuted">
+          <thead className="bg-surfaceAlt/70 border-b border-border text-xs font-semibold text-inkMuted">
             <tr>
-              <th className="px-4 py-3">Nome</th>
-              <th className="px-4 py-3">E-mail</th>
-              <th className="px-4 py-3">Papel</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3"></th>
+              <th className="px-4 py-2.5">Nome</th>
+              <th className="px-4 py-2.5">E-mail</th>
+              <th className="px-4 py-2.5">Papel</th>
+              <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody>
             {carregando && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-inkMuted">Carregando usuários...</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-xs text-inkMuted">Carregando usuários...</td></tr>
             )}
             {!carregando && usuarios.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-inkMuted">
                   <div className="flex flex-col items-center gap-2">
-                    <p className="text-base font-medium text-ink">Nenhum usuário cadastrado.</p>
-                    <p className="text-sm">Crie o primeiro acesso para liberar a operação.</p>
+                    <p className="text-sm font-semibold text-ink">Nenhum usuário cadastrado.</p>
+                    <p className="text-xs">Crie o primeiro acesso para liberar a operação.</p>
                   </div>
                 </td>
               </tr>
             )}
             {usuarios.map((u) => (
-              <tr key={u.id} className="border-t border-border transition hover:bg-[#f8f1e6]">
-                <td className="px-4 py-3 font-semibold text-ink">{u.name}</td>
-                <td className="px-4 py-3 text-inkMuted">{u.email}</td>
-                <td className="px-4 py-3 text-inkMuted">{u.role === "ADMIN" ? "Admin" : "Técnico"}</td>
-                <td className="px-4 py-3 text-inkMuted">{u.isActive ? "Ativo" : "Inativo"}</td>
-                <td className="px-4 py-3">
+              <tr key={u.id} className="border-t border-border transition hover:bg-surfaceAlt/50">
+                <td className="px-4 py-2.5 font-semibold text-ink">{u.name}</td>
+                <td className="px-4 py-2.5 text-xs text-inkMuted">{u.email}</td>
+                <td className="px-4 py-2.5 text-xs text-inkMuted">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${u.role === "ADMIN" ? "bg-sky-50 text-sky-700 border border-sky-200" : "bg-slate-100 text-slate-700 border border-slate-200"}`}>
+                    {u.role === "ADMIN" ? "Admin" : "Técnico"}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-xs text-inkMuted">{u.isActive ? "Ativo" : "Inativo"}</td>
+                <td className="px-4 py-2.5 text-right">
                   {u.isActive && !somenteLeitura && (
-                    <button onClick={() => desativar(u.id)} className="text-xs font-semibold text-[#8c3d35] hover:underline">
+                    <button onClick={() => desativar(u.id)} className="text-xs font-semibold text-rose-600 hover:underline">
                       Desativar
                     </button>
                   )}

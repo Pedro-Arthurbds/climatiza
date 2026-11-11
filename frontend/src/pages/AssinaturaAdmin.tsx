@@ -162,22 +162,22 @@ export function AssinaturaAdmin() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">
-          Administração do sistema
-        </p>
-        <h1 className="mt-2 text-4xl text-ink">Mensalidade</h1>
-        <p className="mt-2 text-sm text-inkMuted">
+        <span className="text-xs font-semibold text-accent">
+          Administração do Sistema
+        </span>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Gestão de Mensalidade</h1>
+        <p className="mt-1 text-sm text-inkMuted">
           Configure as regras de cobrança e registre pagamentos confirmados.
         </p>
       </div>
 
       {erro && (
-        <p className="rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert">
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert">
           {erro}
         </p>
       )}
       {sucesso && (
-        <p className="rounded-2xl border border-[#94b89a] bg-[#dff0e2] px-4 py-3 text-sm text-[#2d6646]" role="status">
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800" role="status">
           {sucesso}
         </p>
       )}
@@ -259,7 +259,7 @@ export function AssinaturaAdmin() {
                 <button
                   type="submit"
                   disabled={salvando}
-                  className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] disabled:opacity-50"
+                  className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted disabled:opacity-50"
                 >
                   {salvando ? "Salvando..." : "Salvar configurações"}
                 </button>
@@ -330,7 +330,7 @@ export function AssinaturaAdmin() {
                 <button
                   type="submit"
                   disabled={salvando}
-                  className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] disabled:opacity-50"
+                  className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted disabled:opacity-50"
                 >
                   {salvando ? "Registrando..." : "Confirmar pagamento"}
                 </button>
@@ -345,25 +345,25 @@ export function AssinaturaAdmin() {
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full min-w-[680px] text-left text-sm">
-                  <thead className="text-[10px] uppercase tracking-[0.16em] text-inkMuted">
+                  <thead className="border-b border-border text-xs font-semibold text-inkMuted bg-surfaceAlt/60">
                     <tr>
-                      <th className="pb-2">Data</th>
-                      <th className="pb-2">Valor</th>
-                      <th className="pb-2">Forma</th>
-                      <th className="pb-2">Período renovado</th>
-                      <th className="pb-2">Referência</th>
+                      <th className="px-3 py-2.5">Data</th>
+                      <th className="px-3 py-2.5">Valor</th>
+                      <th className="px-3 py-2.5">Forma</th>
+                      <th className="px-3 py-2.5">Período renovado</th>
+                      <th className="px-3 py-2.5">Referência</th>
                     </tr>
                   </thead>
                   <tbody>
                     {painel.payments.map((payment) => (
-                      <tr key={payment.id} className="border-t border-border">
-                        <td className="py-3">{dataLegivel(payment.paidAt)}</td>
-                        <td className="py-3">{dinheiro(payment.amount)}</td>
-                        <td className="py-3">{payment.method}</td>
-                        <td className="py-3">
+                      <tr key={payment.id} className="border-t border-border transition hover:bg-surfaceAlt/30">
+                        <td className="px-3 py-3 font-mono text-xs">{dataLegivel(payment.paidAt)}</td>
+                        <td className="px-3 py-3 font-mono font-bold text-ink">{dinheiro(payment.amount)}</td>
+                        <td className="px-3 py-3 text-inkMuted">{payment.method}</td>
+                        <td className="px-3 py-3 text-xs text-inkMuted">
                           {dataLegivel(payment.periodStart)} – {dataLegivel(payment.periodEnd)}
                         </td>
-                        <td className="py-3">{payment.externalId}</td>
+                        <td className="px-3 py-3 font-mono text-xs text-inkMuted">{payment.externalId}</td>
                       </tr>
                     ))}
                   </tbody>

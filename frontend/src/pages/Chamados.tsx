@@ -135,28 +135,27 @@ export function Chamados() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Operação</p>
-          <h1 className="mt-2 text-4xl text-ink">Chamados</h1>
-          <p className="mt-2 text-sm text-inkMuted">
+          <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Ordens de Serviço</h1>
+          <p className="mt-0.5 text-xs text-inkMuted">
             {user?.role === "TECNICO"
-              ? "Seus chamados e os ainda sem técnico atribuído."
-              : "Todos os chamados abertos na operação."}
+              ? "Seus chamados atribuídos e pendências sem técnico."
+              : "Gestão central de manutenções e atendimentos em campo."}
           </p>
         </div>
 
         {user?.role === "ADMIN" && !somenteLeitura && (
           <button
             onClick={() => setMostrarForm((v) => !v)}
-            className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] shadow-[0_10px_25px_rgba(47,79,72,0.2)] transition hover:bg-[#24413d]"
+            className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted transition self-start sm:self-auto"
           >
-            {mostrarForm ? "Fechar" : "Novo chamado"}
+            {mostrarForm ? "Fechar formulário" : "+ Novo chamado"}
           </button>
         )}
       </div>
 
-      <div className="mb-1 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-1 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ResumoCard titulo="Total" valor={resumo.total} destaque />
         <ResumoCard titulo="Abertos" valor={resumo.abertos} valorClasse="text-status-aberto" />
         <ResumoCard titulo="Em andamento" valor={resumo.andamento} valorClasse="text-status-andamento" />
@@ -164,13 +163,13 @@ export function Chamados() {
       </div>
 
       {erro && (
-        <p className="rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert">
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-800" role="alert">
           {erro}
         </p>
       )}
 
       {sucesso && (
-        <p className="rounded-2xl border border-[#94b89a] bg-[#dff0e2] px-4 py-3 text-sm text-[#2d6646]" role="status">
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800" role="status">
           {sucesso}
         </p>
       )}
@@ -189,17 +188,17 @@ export function Chamados() {
         />
       )}
 
-      <div className="rounded-[24px] border border-border bg-[#fffdf9] p-4 shadow-panel">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="rounded-xl border border-border bg-surface p-4 shadow-subtle">
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => {
               setFiltroStatus("");
               setPagina(1);
             }}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
               filtroStatus === ""
-                ? "border-[#2f4f48] bg-[#2f4f48] text-[#f7f2ea]"
-                : "border-border bg-surfaceAlt text-inkMuted"
+                ? "border-accent bg-accent text-white"
+                : "border-border bg-surfaceAlt text-inkMuted hover:border-accent/40"
             }`}
           >
             Todos
@@ -211,10 +210,10 @@ export function Chamados() {
                 setFiltroStatus(s);
                 setPagina(1);
               }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
                 filtroStatus === s
-                  ? "border-[#2f4f48] bg-[#2f4f48] text-[#f7f2ea]"
-                  : "border-border bg-surfaceAlt text-inkMuted"
+                  ? "border-accent bg-accent text-white"
+                  : "border-border bg-surfaceAlt text-inkMuted hover:border-accent/40"
               }`}
             >
               {labelsStatus[s]}
@@ -224,23 +223,23 @@ export function Chamados() {
             <button
               type="button"
               onClick={limparFiltros}
-              className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-inkMuted"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-inkMuted hover:text-ink"
             >
               Limpar filtro
             </button>
           )}
         </div>
 
-        <div className="overflow-x-auto rounded-[20px] border border-border bg-[#f9f4eb]">
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
           <table className="min-w-[760px] w-full text-left text-sm">
-            <thead className="bg-[#efe6db] text-[10px] uppercase tracking-[0.16em] text-inkMuted">
+            <thead className="bg-surfaceAlt/70 border-b border-border text-xs font-semibold text-inkMuted">
               <tr>
-                <th className="px-4 py-3">Cliente</th>
-                <th className="px-4 py-3">Equipamento</th>
-                <th className="px-4 py-3">Técnico</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Agendado</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-4 py-2.5">Cliente</th>
+                <th className="px-4 py-2.5">Equipamento</th>
+                <th className="px-4 py-2.5">Técnico</th>
+                <th className="px-4 py-2.5">Status</th>
+                <th className="px-4 py-2.5">Agendado</th>
+                <th className="px-4 py-2.5"></th>
               </tr>
             </thead>
             <tbody>
@@ -272,7 +271,7 @@ export function Chamados() {
                 <tr
                   key={chamado.id}
                   onClick={() => setSelecionado(chamado.id)}
-                  className="cursor-pointer border-t border-border transition hover:bg-[#f3eadb]"
+                  className="cursor-pointer border-t border-border transition hover:bg-surfaceAlt/60"
                 >
                   <td className="px-4 py-3">
                     <p className="font-semibold text-ink">{chamado.client.name}</p>
@@ -612,11 +611,11 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 rounded-xl border border-border bg-surface p-6 shadow-[0_12px_30px_rgba(0,0,0,0.08)]"
+      className="mb-6 rounded-xl border border-border bg-surface p-6 shadow-subtle"
     >
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-inkMuted">Novo chamado</p>
+          <span className="text-xs font-semibold text-accent">Abertura de Ordem de Serviço</span>
           <h2 className="mt-1 text-xl font-bold text-ink">{etapas[etapa].titulo}</h2>
         </div>
         <span className="rounded-full border border-border bg-surfaceAlt px-2.5 py-1 text-xs font-semibold text-inkMuted">
@@ -906,8 +905,8 @@ function NovoChamadoForm({ onCriado }: { onCriado: (mensagem?: string) => void }
       </div>
 
       {etapa === 2 && (
-        <div className="mt-6 rounded-xl border border-border bg-surfaceAlt p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-inkMuted">Resumo</p>
+        <div className="mt-6 rounded-xl border border-border bg-surfaceAlt/60 p-4">
+          <p className="mb-2 text-xs font-semibold text-ink">Resumo da Ordem de Serviço</p>
           <div className="grid gap-2 text-sm text-inkMuted md:grid-cols-2">
             <p><span className="font-medium text-ink">Cliente:</span> {clientes.find((c) => c.id === clientId)?.name ?? "—"}</p>
             <p><span className="font-medium text-ink">Serviço:</span> {tipos.find((t) => t.id === serviceTypeId)?.name ?? "—"}</p>
@@ -971,12 +970,12 @@ function ResumoCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-4 ${
-        destaque ? "border-accent/40 bg-accent/10" : "border-border bg-surface"
+      className={`rounded-xl border p-3.5 shadow-subtle ${
+        destaque ? "border-accent/40 bg-accent/5" : "border-border bg-surface"
       }`}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-inkMuted">{titulo}</p>
-      <p className={`mt-3 text-3xl font-extrabold tracking-tight ${valorClasse ?? "text-ink"}`}>
+      <p className="text-xs font-medium text-inkMuted">{titulo}</p>
+      <p className={`mt-1 text-2xl font-bold tracking-tight font-mono tabular-nums ${valorClasse ?? "text-ink"}`}>
         {valor}
       </p>
     </div>

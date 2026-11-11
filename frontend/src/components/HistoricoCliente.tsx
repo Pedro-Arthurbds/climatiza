@@ -70,10 +70,8 @@ export function HistoricoCliente({
       >
         <div className="flex items-start justify-between border-b border-border p-6">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">
-              Histórico de chamados
-            </p>
-            <h2 className="mt-1 break-words text-lg font-extrabold tracking-tight">
+            <span className="text-xs font-medium text-accent">Histórico de Ordens</span>
+            <h2 className="mt-0.5 break-words text-lg font-bold tracking-tight text-ink">
               {cliente.name}
             </h2>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-inkMuted">
@@ -183,11 +181,9 @@ export function HistoricoCliente({
 
 function Resumo({ rotulo, valor }: { rotulo: string; valor: number }) {
   return (
-    <div className="rounded-lg border border-border bg-surfaceAlt/60 py-2">
-      <p className="text-xl font-extrabold text-ink">{valor}</p>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-inkMuted">
-        {rotulo}
-      </p>
+    <div className="rounded-lg border border-border bg-surfaceAlt/60 py-2.5 px-3">
+      <p className="font-mono text-xl font-bold text-ink">{valor}</p>
+      <p className="text-xs font-medium text-inkMuted">{rotulo}</p>
     </div>
   );
 }

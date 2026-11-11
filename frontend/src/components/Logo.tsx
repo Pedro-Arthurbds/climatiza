@@ -28,26 +28,17 @@ export function LogoIcon({ variant = "sidebar", className = "h-11 w-11", size }:
     >
       <defs>
         <linearGradient id={bgGradId} x1="0%" y1="0%" x2="100%" y2="100%">
-          {isSidebar ? (
-            <>
-              <stop offset="0%" stopColor="#F8D7B5" />
-              <stop offset="100%" stopColor="#E5B888" />
-            </>
-          ) : (
-            <>
-              <stop offset="0%" stopColor="#F8CDA0" />
-              <stop offset="100%" stopColor="#D58E5D" />
-            </>
-          )}
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="100%" stopColor="#0284C7" />
         </linearGradient>
 
         <linearGradient id={iconGradId} x1="15%" y1="15%" x2="85%" y2="85%">
-          <stop offset="0%" stopColor="#182323" />
-          <stop offset="100%" stopColor="#28443E" />
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#F0F9FF" />
         </linearGradient>
 
         <filter id={shadowId} x="-10%" y="-10%" width="120%" height="125%">
-          <feDropShadow dx="0" dy="1.2" stdDeviation="1" floodColor="#182323" floodOpacity="0.14" />
+          <feDropShadow dx="0" dy="1.2" stdDeviation="1" floodColor="#0B1320" floodOpacity="0.2" />
         </filter>
       </defs>
 
@@ -84,7 +75,7 @@ export function LogoIcon({ variant = "sidebar", className = "h-11 w-11", size }:
           strokeLinecap="round"
           fill="none"
         />
-        <circle cx="34" cy="19.5" r="1.5" fill="#182323" />
+        <circle cx="34" cy="19.5" r="1.5" fill="#FFFFFF" />
 
         {/* Center airflow stream + ice diamond spark */}
         <path
@@ -94,7 +85,7 @@ export function LogoIcon({ variant = "sidebar", className = "h-11 w-11", size }:
           strokeLinecap="round"
           fill="none"
         />
-        <path d="M 35 24 L 37.5 21.5 L 40 24 L 37.5 26.5 Z" fill="#182323" />
+        <path d="M 35 24 L 37.5 21.5 L 40 24 L 37.5 26.5 Z" fill="#FFFFFF" />
 
         {/* Bottom airflow wave */}
         <path
@@ -104,7 +95,7 @@ export function LogoIcon({ variant = "sidebar", className = "h-11 w-11", size }:
           strokeLinecap="round"
           fill="none"
         />
-        <circle cx="34" cy="28.5" r="1.5" fill="#182323" />
+        <circle cx="34" cy="28.5" r="1.5" fill="#FFFFFF" />
       </g>
     </svg>
   );
@@ -134,17 +125,17 @@ export function Logo({
       <div>
         {isSidebar ? (
           <>
-            <p className="text-xl font-black tracking-tight text-[#fffaf3]">Climatiza</p>
+            <p className="text-xl font-bold tracking-tight text-white">Climatiza</p>
             {subtitle && (
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#d5d0c7]">{subtitle}</p>
+              <p className="text-xs font-medium text-[#94a3b8]">{subtitle}</p>
             )}
           </>
         ) : (
           <>
             {subtitle && (
-              <p className="text-xs uppercase tracking-[0.22em] text-[#5f6a62]">{subtitle}</p>
+              <p className="text-xs font-semibold text-accent">{subtitle}</p>
             )}
-            <p className="text-2xl font-black tracking-tight text-[#1f2a2a]">Climatiza</p>
+            <p className="text-2xl font-bold tracking-tight text-ink">Climatiza</p>
           </>
         )}
       </div>

@@ -36,28 +36,28 @@ export function DefinirSenha() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f6f1e8] px-4 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-[26px] border border-[#d9cbb4] bg-[#fffdf9] p-6 shadow-panel">
+    <div className="flex min-h-screen items-center justify-center bg-base px-4 py-10">
+      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-xl border border-border bg-surface p-7 shadow-panel">
         <div className="mb-5">
           <Logo variant="login" subtitle="Primeiro acesso" />
         </div>
-        <h1 className="mt-2 text-3xl text-ink">Crie sua senha</h1>
-        <p className="mt-2 text-sm leading-6 text-inkMuted">Escolha uma senha pessoal para continuar no Climatiza (mínimo de 8 caracteres com letras e números).</p>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink">Crie sua senha</h1>
+        <p className="mt-1 text-xs leading-5 text-inkMuted">Escolha uma senha pessoal para acessar o Climatiza (mínimo de 8 caracteres com letras e números).</p>
 
-        {error && <p className="mt-4 rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert">{error}</p>}
+        {error && <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800" role="alert">{error}</p>}
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-5 space-y-3.5">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-inkMuted">Nova senha</span>
+            <span className="mb-1 block text-xs font-medium text-ink">Nova senha</span>
             <input required minLength={8} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="campo-input" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-inkMuted">Confirme a nova senha</span>
+            <span className="mb-1 block text-xs font-medium text-ink">Confirme a nova senha</span>
             <input required minLength={8} type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} className="campo-input" />
           </label>
         </div>
 
-        <button type="submit" disabled={loading} className="mt-6 w-full rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] hover:bg-[#24413d] disabled:opacity-50">
+        <button type="submit" disabled={loading} className="mt-6 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-accentMuted disabled:opacity-50">
           {loading ? "Salvando..." : "Definir senha e continuar"}
         </button>
       </form>

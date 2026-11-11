@@ -145,20 +145,10 @@ export function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
-        <div className="md:hidden">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Operação</p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-ink">Dashboard</h1>
-          </div>
-        </div>
-
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3">
         <div>
-          <div className="hidden md:block">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Operação</p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-ink">Dashboard</h1>
-            <p className="mt-1 text-sm text-inkMuted">Panorama da equipe e do dia.</p>
-          </div>
+          <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Telemetria de Atendimentos</h1>
+          <p className="mt-0.5 text-xs text-inkMuted">Acompanhamento em tempo real de chamados, prazos e equipe em campo.</p>
         </div>
       </div>
 
@@ -177,134 +167,127 @@ export function Dashboard() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_10px_30px_rgba(0,0,0,0.08)] md:hidden">
+      <div className="rounded-xl border border-border bg-surface p-4 shadow-subtle md:hidden">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-inkMuted">Panorama</p>
-            <p className="mt-1 text-base font-semibold text-ink">Resumo semanal</p>
+            <p className="text-xs font-semibold text-ink">Resumo semanal</p>
+            <p className="text-xs text-inkMuted">
+              {resumo?.abertos ?? 0} chamados abertos · {resumo?.agendadosHoje ?? 0} agendados hoje
+            </p>
           </div>
-          {!somenteLeitura && <button
-            type="button"
-            onClick={() => setMostrarPanorama((valor) => !valor)}
-            className="rounded-full border border-border bg-surfaceAlt px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-inkMuted"
-          >
-            {mostrarPanorama ? "Ocultar" : "Ver"}
-          </button>}
+          {!somenteLeitura && (
+            <button
+              type="button"
+              onClick={() => setMostrarPanorama((valor) => !valor)}
+              className="rounded-lg border border-border bg-surfaceAlt px-2.5 py-1 text-xs font-medium text-ink hover:border-accent"
+            >
+              {mostrarPanorama ? "Ocultar" : "Expandir"}
+            </button>
+          )}
         </div>
-
-        {!mostrarPanorama && (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-inkMuted">
-              {resumo?.abertos ?? 0} chamados abertos · {resumo?.agendadosHoje ?? 0} agendados hoje.
-            </p>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-inkMuted">
-              Panorama semanal oculto. Toque em “Ver” para ver o histórico por mês e por tipo.
-            </p>
-          </div>
-        )}
       </div>
 
       <div className={mostrarPanorama ? "grid gap-6 xl:grid-cols-[1.3fr_1fr]" : "hidden lg:grid lg:grid-cols-2 xl:grid-cols-[1.3fr_1fr]"}>
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-subtle">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surfaceAlt text-accent">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/20 bg-accent/10 text-accent">
                 <HiOutlineArrowTrendingUp className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-inkMuted">Tráfego</p>
-                <p className="mt-1 text-base font-semibold text-ink">Chamados por mês</p>
+                <p className="text-sm font-semibold text-ink">Volume de Chamados</p>
+                <p className="text-xs text-inkMuted">Evolução por mês</p>
               </div>
             </div>
-            <span className="rounded-full border border-border bg-surfaceAlt px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-inkMuted">
+            <span className="rounded-md border border-border bg-surfaceAlt px-2.5 py-0.5 text-xs font-medium text-inkMuted">
               Trimestre
             </span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={porPeriodo}>
-              <CartesianGrid stroke="#2E3746" strokeDasharray="3 3" />
-              <XAxis dataKey="mes" stroke="#8B94A6" fontSize={12} />
-              <YAxis stroke="#8B94A6" fontSize={12} allowDecimals={false} />
+              <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="mes" stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#64748B" fontSize={12} allowDecimals={false} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ background: "#1C232E", border: "1px solid #2E3746" }}
+                contentStyle={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: "8px", color: "#FFFFFF", fontSize: "12px" }}
               />
-              <Line type="monotone" dataKey="total" stroke="#4FA3A8" strokeWidth={2} />
+              <Line type="monotone" dataKey="total" stroke="#0284C7" strokeWidth={2.5} dot={{ fill: "#0284C7", r: 4 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-subtle">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surfaceAlt text-accent">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/20 bg-accent/10 text-accent">
                 <HiOutlineSquare3Stack3D className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-inkMuted">Atividade</p>
-                <p className="mt-1 text-base font-semibold text-ink">Por tipo de serviço</p>
+                <p className="text-sm font-semibold text-ink">Tipos de Serviço</p>
+                <p className="text-xs text-inkMuted">Distribuição da demanda</p>
               </div>
             </div>
-            <span className="rounded-full border border-border bg-surfaceAlt px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-inkMuted">
-              Volume
+            <span className="rounded-md border border-border bg-surfaceAlt px-2.5 py-0.5 text-xs font-medium text-inkMuted">
+              Demanda
             </span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={grafico?.porTipoServico ?? []}>
-              <CartesianGrid stroke="#2E3746" strokeDasharray="3 3" />
-              <XAxis dataKey="tipo" stroke="#8B94A6" fontSize={12} />
-              <YAxis stroke="#8B94A6" fontSize={12} allowDecimals={false} />
+              <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="tipo" stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#64748B" fontSize={12} allowDecimals={false} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ background: "#1C232E", border: "1px solid #2E3746" }}
+                contentStyle={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: "8px", color: "#FFFFFF", fontSize: "12px" }}
               />
-              <Bar dataKey="total" fill="#4FA3A8" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-subtle">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surfaceAlt text-accent">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/20 bg-accent/10 text-accent">
                 <HiOutlineUsers className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-inkMuted">Equipe</p>
-                <p className="mt-1 text-base font-semibold text-ink">Carga por técnico</p>
+                <p className="text-sm font-semibold text-ink">Equipe Técnica</p>
+                <p className="text-xs text-inkMuted">Distribuição da carga de trabalho</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setMostrarEquipe((valor) => !valor)}
-              className="rounded-full border border-border bg-surfaceAlt px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-inkMuted md:hidden"
+              className="rounded-lg border border-border bg-surfaceAlt px-2.5 py-1 text-xs font-medium text-inkMuted md:hidden"
             >
-              {mostrarEquipe ? "Fechar" : "Abrir"}
+              {mostrarEquipe ? "Ocultar" : "Ver"}
             </button>
           </div>
 
           <div className={mostrarEquipe ? "block" : "hidden md:block"}>
             <table className="w-full text-left text-sm">
-              <thead className="text-[10px] uppercase tracking-[0.16em] text-inkMuted">
+              <thead className="border-b border-border text-xs font-semibold text-inkMuted">
                 <tr>
                   <th className="pb-2">Técnico</th>
-                  <th className="pb-2 text-right">Carga</th>
+                  <th className="pb-2 text-right">Em atendimento</th>
                   <th className="pb-2 text-right">Concluídos</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {tecnicos.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="py-3 text-inkMuted">
-                      Nenhum técnico ativo.
+                    <td colSpan={3} className="py-4 text-center text-xs text-inkMuted">
+                      Nenhum técnico ativo no momento.
                     </td>
                   </tr>
                 )}
                 {tecnicos.map((t) => (
-                  <tr key={t.userId} className="border-t border-border">
-                    <td className="py-2 font-medium">{t.nome}</td>
-                    <td className="py-2 text-right text-inkMuted">{t.cargaAtual}</td>
-                    <td className="py-2 text-right text-inkMuted">{t.concluidos}</td>
+                  <tr key={t.userId} className="hover:bg-surfaceAlt/50 transition-colors">
+                    <td className="py-2.5 font-medium text-ink">{t.nome}</td>
+                    <td className="py-2.5 text-right font-mono text-ink tabular-nums">{t.cargaAtual}</td>
+                    <td className="py-2.5 text-right font-mono text-inkMuted tabular-nums">{t.concluidos}</td>
                   </tr>
                 ))}
               </tbody>
@@ -312,41 +295,38 @@ export function Dashboard() {
           </div>
 
           {!mostrarEquipe && (
-            <div className="mt-3 space-y-2 md:hidden">
-              <p className="text-sm text-inkMuted">
+            <div className="mt-3 space-y-1 md:hidden">
+              <p className="text-xs text-inkMuted">
                 {tecnicos.length} técnico{tecnicos.length === 1 ? "" : "s"} em operação.
-              </p>
-              <p className="text-[10px] uppercase tracking-[0.16em] text-inkMuted">
-                Carga por técnico escondida. Toque em “Abrir” para ver a distribuição de trabalho.
               </p>
             </div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-subtle">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-status-aberto/30 bg-status-aberto/10 text-status-aberto">
                 <HiOutlineBellAlert className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-inkMuted">Alerta</p>
-                <p className="text-base font-semibold text-ink">Alertas de manutenção</p>
+                <p className="text-sm font-semibold text-ink">Alertas de Manutenção</p>
+                <p className="text-xs text-inkMuted">Preventivas e retornos agendados</p>
               </div>
             </div>
             {alertas.length > 0 && (
-              <span className="rounded-full border border-status-aberto/30 bg-status-aberto/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-status-aberto">
-                {alertas.length} itens
+              <span className="rounded-md border border-status-aberto/30 bg-status-aberto/10 px-2 py-0.5 text-xs font-semibold text-status-aberto">
+                {alertas.length} pendente{alertas.length === 1 ? "" : "s"}
               </span>
             )}
           </div>
           {erroAlertas && (
-            <p className="mb-3 text-sm text-status-cancelado" role="alert">
+            <p className="mb-3 text-xs text-status-cancelado" role="alert">
               {erroAlertas}
             </p>
           )}
           {alertas.length === 0 && (
-            <p className="text-sm text-inkMuted">Nenhum alerta pendente.</p>
+            <p className="py-4 text-center text-xs text-inkMuted">Nenhum alerta preventivo pendente.</p>
           )}
           <ul className="flex flex-col gap-3">
             {alertas.map((a) => (
@@ -418,17 +398,17 @@ function Card({
         destaque ? "border-status-cancelado/40 bg-status-cancelado/10" : ""
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="metric-card-title">{titulo}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium text-inkMuted leading-tight">{titulo}</p>
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm transition-colors ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm transition-colors ${
             badgeClasse ?? "border-border bg-surfaceAlt text-inkMuted"
           }`}
         >
           {icone ?? "•"}
         </span>
       </div>
-      <p className={`metric-card-value ${corTexto ?? "text-ink"}`}>
+      <p className={`mt-2 text-2xl sm:text-3xl font-bold tracking-tight font-mono tabular-nums ${corTexto ?? "text-ink"}`}>
         {valor ?? "—"}
       </p>
     </div>

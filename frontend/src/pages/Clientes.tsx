@@ -195,10 +195,10 @@ export function Clientes() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-inkMuted">Cadastro</p>
-          <h1 className="mt-2 text-3xl text-ink sm:text-4xl">Clientes</h1>
+          <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Base de Clientes</h1>
+          <p className="mt-0.5 text-xs text-inkMuted">Contatos, endereços e histórico de equipamentos instalados.</p>
         </div>
         {user?.role === "ADMIN" && !somenteLeitura && (
           <button
@@ -212,21 +212,21 @@ export function Clientes() {
                 limparFormulario();
               }
             }}
-            className="w-full rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] shadow-[0_10px_25px_rgba(47,79,72,0.2)] transition hover:bg-[#24413d] sm:w-auto"
+            className="w-full rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted transition sm:w-auto self-start sm:self-auto"
           >
-            {mostrarForm ? "Fechar" : "Novo cliente"}
+            {mostrarForm ? "Fechar formulário" : "+ Novo cliente"}
           </button>
         )}
       </div>
 
       {mensagemSucesso && (
-        <p className="rounded-2xl border border-[#94b89a] bg-[#dff0e2] px-4 py-3 text-sm text-[#2d6646]" role="status" aria-live="polite">
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800" role="status" aria-live="polite">
           {mensagemSucesso}
         </p>
       )}
 
       {mensagemErro && (
-        <p className="rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert" aria-live="assertive">
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert" aria-live="assertive">
           {mensagemErro}
         </p>
       )}
@@ -234,7 +234,7 @@ export function Clientes() {
       {mostrarForm && !somenteLeitura && (
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 gap-4 rounded-[24px] border border-border bg-[#fffdf9] p-4 shadow-panel sm:p-6 md:grid-cols-2"
+          className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-surface p-5 shadow-subtle sm:p-6 md:grid-cols-2"
         >
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-inkMuted">Nome</span>
@@ -280,23 +280,23 @@ export function Clientes() {
                   setMostrarForm(false);
                   limparFormulario();
                 }}
-                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-inkMuted sm:w-auto"
+                className="w-full rounded-lg border border-border px-4 py-2 text-xs font-semibold text-inkMuted hover:text-ink sm:w-auto"
               >
                 Cancelar
               </button>
             )}
-            <button type="submit" disabled={enviando} className="w-full rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0] hover:bg-[#24413d] disabled:opacity-50 sm:w-auto">
+            <button type="submit" disabled={enviando} className="w-full rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted disabled:opacity-50 sm:w-auto">
               {enviando ? "Salvando..." : clienteEditandoId ? "Salvar alterações" : "Salvar cliente"}
             </button>
           </div>
         </form>
       )}
 
-      <section className="overflow-hidden rounded-[20px] border border-border bg-[#fffdf9] shadow-panel">
+      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-subtle">
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-ink">Lista de clientes</h2>
-            <p className="mt-1 text-sm text-inkMuted">
+            <h2 className="text-sm font-semibold text-ink">Clientes Cadastrados</h2>
+            <p className="text-xs text-inkMuted">
               {carregando ? "Carregando registros..." : `${clientesFiltrados.length} de ${clientes.length} clientes`}
             </p>
           </div>
@@ -329,7 +329,7 @@ export function Clientes() {
               <button
                 type="button"
                 onClick={() => abrirFormulario()}
-                className="mt-2 rounded-xl bg-[#2f4f48] px-3 py-2 text-xs font-semibold text-[#f9f5f0]"
+                className="mt-2 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-accentMuted"
               >
                 Adicionar cliente
               </button>
@@ -349,7 +349,7 @@ export function Clientes() {
               <article
                 key={cliente.id}
                 onClick={() => setClienteHistorico(cliente)}
-                className="flex cursor-pointer items-start justify-between gap-3 p-4 hover:bg-[#f8f1e6]"
+                className="flex cursor-pointer items-start justify-between gap-3 p-4 hover:bg-surfaceAlt/60"
               >
                 <div className="min-w-0">
                   <h3 className="break-words font-semibold text-ink">
@@ -394,7 +394,7 @@ export function Clientes() {
                       e.stopPropagation();
                       abrirFormulario(cliente);
                     }}
-                    className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-[#2f4f48]"
+                    className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-accent hover:border-accent"
                   >
                     Editar
                   </button>
@@ -407,13 +407,13 @@ export function Clientes() {
         {!carregando && !erroCarregamento && clientesFiltrados.length > 0 && (
           <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-[#efe6db] text-[10px] uppercase tracking-[0.16em] text-inkMuted">
+          <thead className="bg-surfaceAlt/70 border-b border-border text-xs font-semibold text-inkMuted">
             <tr>
-              <th className="px-4 py-3">Nome</th>
-              <th className="px-4 py-3">Contato</th>
-              <th className="px-4 py-3">CPF/CNPJ</th>
-              <th className="px-4 py-3">Endereços</th>
-              {user?.role === "ADMIN" && <th className="px-4 py-3">Ações</th>}
+              <th className="px-4 py-2.5">Nome</th>
+              <th className="px-4 py-2.5">Contato</th>
+              <th className="px-4 py-2.5">CPF/CNPJ</th>
+              <th className="px-4 py-2.5">Endereços</th>
+              {user?.role === "ADMIN" && <th className="px-4 py-2.5">Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -421,7 +421,7 @@ export function Clientes() {
               <tr
                 key={c.id}
                 onClick={() => setClienteHistorico(c)}
-                className="cursor-pointer border-t border-border transition hover:bg-[#f8f1e6]"
+                className="cursor-pointer border-t border-border transition hover:bg-surfaceAlt/50"
               >
                 <td className="px-4 py-3 font-semibold text-ink">
                   <button
@@ -463,7 +463,7 @@ export function Clientes() {
                         e.stopPropagation();
                         abrirFormulario(c);
                       }}
-                      className="text-xs font-semibold text-[#2f4f48] hover:underline"
+                      className="text-xs font-semibold text-accent hover:underline"
                     >
                       Editar
                     </button>

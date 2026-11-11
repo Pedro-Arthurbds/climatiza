@@ -219,10 +219,10 @@ export function Agenda() {
 
   return (
     <div>
-      <div className="mb-4 rounded-2xl border border-border bg-surface p-4 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+      <div className="mb-4 rounded-xl border border-border bg-surface p-5 shadow-subtle">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Agenda</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-ink">Agenda Operacional</h1>
             <p className="text-sm capitalize text-inkMuted">{rotuloPeriodo}</p>
           </div>
 
@@ -241,8 +241,10 @@ export function Agenda() {
                 <button
                   key={v}
                   onClick={() => setVisao(v)}
-                  className={`rounded-md border px-3 py-1.5 text-xs font-semibold capitalize ${
-                    visao === v ? "border-accent text-accent" : "border-border text-inkMuted"
+                  className={`rounded-md border px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
+                    visao === v
+                      ? "border-accent bg-accent text-white shadow-xs"
+                      : "border-border bg-surface text-inkMuted hover:bg-surfaceAlt hover:text-ink"
                   }`}
                 >
                   {v === "mes" ? "mês" : v}
@@ -252,18 +254,27 @@ export function Agenda() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-xl border border-status-aberto/30 bg-status-aberto/10 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-status-aberto">Hoje</p>
-            <p className="mt-1 text-lg font-bold text-ink">{totalHoje}</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-sky-100 bg-sky-50/50 px-3.5 py-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-sky-800">Compromissos Hoje</span>
+              <span className="h-2 w-2 rounded-full bg-sky-500" />
+            </div>
+            <p className="mt-1 font-mono text-xl font-bold text-ink">{totalHoje}</p>
           </div>
-          <div className="rounded-xl border border-accent/30 bg-accent/10 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-accent">Semana</p>
-            <p className="mt-1 text-lg font-bold text-ink">{totalSemana}</p>
+          <div className="rounded-lg border border-border bg-surfaceAlt/60 px-3.5 py-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-inkMuted">Escala da Semana</span>
+              <span className="h-2 w-2 rounded-full bg-accent" />
+            </div>
+            <p className="mt-1 font-mono text-xl font-bold text-ink">{totalSemana}</p>
           </div>
-          <div className="rounded-xl border border-border bg-surfaceAlt px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-inkMuted">Pendentes</p>
-            <p className="mt-1 text-lg font-bold text-ink">{totalPendentes}</p>
+          <div className="rounded-lg border border-amber-100 bg-amber-50/50 px-3.5 py-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-amber-800">Pendentes de Alocação</span>
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+            </div>
+            <p className="mt-1 font-mono text-xl font-bold text-amber-900">{totalPendentes}</p>
           </div>
         </div>
       </div>
@@ -540,31 +551,32 @@ function CardChamado({
     : "";
 
   const borda = chamado.atrasado
-    ? "border-status-cancelado/60 bg-status-cancelado/10"
+    ? "border-rose-200 bg-rose-50/90 text-rose-950 hover:border-rose-300 shadow-xs"
     : chamado.conflito
-      ? "border-status-aberto/60 bg-status-aberto/10"
-      : "border-border bg-surfaceAlt";
+      ? "border-amber-200 bg-amber-50/90 text-amber-950 hover:border-amber-300 shadow-xs"
+      : "border-border bg-white text-ink hover:border-accent/40 shadow-xs";
 
   return (
     <button
       draggable={!somenteLeitura}
       onDragStart={(e) => e.dataTransfer.setData("text/plain", chamado.id)}
       onClick={() => aoAbrir(chamado.id)}
-      className={`w-full rounded border p-2 text-left text-xs ${somenteLeitura ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"} ${borda}`}
+      className={`w-full rounded-md border p-2 text-left text-xs transition-colors ${somenteLeitura ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"} ${borda}`}
     >
-      <p className="font-semibold">
-        {hora} {chamado.client.name}
-      </p>
+      <div className="flex items-center gap-1.5">
+        {hora && <span className="font-mono font-semibold text-accent">{hora}</span>}
+        <span className="truncate font-medium">{chamado.client.name}</span>
+      </div>
       {detalhado && (
-        <p className="text-inkMuted">
+        <p className="mt-1 text-[11px] text-inkMuted truncate">
           {chamado.serviceType.name} · {chamado.address.city}
         </p>
       )}
       {chamado.conflito && (
-        <p className="mt-1 font-semibold text-status-aberto">Conflito de horário</p>
+        <p className="mt-1 text-[11px] font-semibold text-amber-700">⚠️ Conflito de horário</p>
       )}
       {chamado.atrasado && (
-        <p className="mt-1 font-semibold text-status-cancelado">Atrasado</p>
+        <p className="mt-1 text-[11px] font-semibold text-rose-700">⚠️ Atrasado</p>
       )}
     </button>
   );

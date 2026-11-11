@@ -75,9 +75,9 @@ export function DashboardLayout() {
           <Logo variant="sidebar" subtitle="Operação" />
         </div>
 
-        <div className="rounded-2xl border border-[#3f5653] bg-[#263939] p-3">
-          <p className="text-sm font-semibold text-[#fffaf3]">{user?.name}</p>
-          <p className="text-xs text-[#d5d0c7]">{roleLabel}</p>
+        <div className="rounded-xl border border-[#1e293b] bg-[#111c2e] p-3">
+          <p className="text-sm font-semibold text-white">{user?.name}</p>
+          <p className="text-xs text-[#94a3b8]">{roleLabel}</p>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export function DashboardLayout() {
             >
               <span>{link.label}</span>
               {link.to === "/notificacoes" && pendentes > 0 && (
-                <span className="rounded-full bg-status-cancelado px-1.5 py-0.5 text-[10px] font-bold text-base">
+                <span className="rounded-full bg-status-cancelado px-1.5 py-0.5 text-[10px] font-bold text-white">
                   {pendentes}
                 </span>
               )}
@@ -116,10 +116,10 @@ export function DashboardLayout() {
         )}
       </nav>
 
-      <div className="border-t border-[#3f5653] p-3">
+      <div className="border-t border-[#1e293b] p-3">
         <button
           onClick={logout}
-          className="w-full rounded-xl border border-[#3f5653] bg-[#263939] px-3 py-2 text-left text-sm font-medium text-[#e2dccf] transition hover:border-[#d58e5d]/60 hover:bg-[#2d4643] hover:text-white"
+          className="w-full rounded-lg border border-[#1e293b] bg-[#111c2e] px-3 py-2 text-left text-sm font-medium text-[#94a3b8] transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
         >
           Sair
         </button>
@@ -131,7 +131,7 @@ export function DashboardLayout() {
     <div className="app-shell min-h-screen lg:h-dvh lg:min-h-0 lg:overflow-hidden">
       <a
         href="#app-main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-base"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
       >
         Pular para o conteúdo principal
       </a>
@@ -156,11 +156,11 @@ export function DashboardLayout() {
       <main
         id="app-main-content"
         tabIndex={-1}
-        className="min-w-0 flex-1 overflow-y-auto outline-none bg-[#f6f1e8] lg:h-dvh lg:min-h-0"
+        className="min-w-0 flex-1 overflow-y-auto outline-none bg-base lg:h-dvh lg:min-h-0"
       >
         <BannerAssinatura />
-        <header className="sticky top-0 z-10 border-b border-border/80 bg-[#f7f3eb]/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-10 border-b border-border bg-surface/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -174,16 +174,16 @@ export function DashboardLayout() {
               </button>
 
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-inkMuted">Visão geral</p>
-                <h2 className="mt-1 text-2xl text-ink">Operação Climatiza</h2>
+                <p className="text-xs font-medium text-inkMuted">Painel Operacional</p>
+                <h1 className="text-lg font-bold text-ink sm:text-xl">Climatiza</h1>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="hidden rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-inkMuted sm:inline-flex">
+              <span className="hidden rounded-full border border-border bg-surfaceAlt px-3 py-1 text-xs font-medium text-inkMuted sm:inline-flex">
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
-              <span className="rounded-full border border-[#2f4f48]/20 bg-[#2f4f48]/10 px-3 py-1.5 text-xs font-semibold text-accent">
+              <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
                 {roleLabel}
               </span>
             </div>

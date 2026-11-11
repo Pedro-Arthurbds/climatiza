@@ -24,24 +24,24 @@ export function AssinaturaPendente() {
     assinatura?.status === "SUSPENSA" && assinatura.mode === "READ_ONLY";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f6f1e8] p-4">
-      <section className="w-full max-w-2xl rounded-[24px] border border-border bg-[#fffdf9] p-6 shadow-panel sm:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8c3d35]">
+    <main className="flex min-h-screen items-center justify-center bg-base p-4">
+      <section className="w-full max-w-2xl rounded-xl border border-border bg-surface p-6 shadow-panel sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-wider text-rose-600">
           Assinatura pendente
         </p>
-        <h1 className="mt-3 text-3xl text-ink sm:text-4xl">
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           Regularize sua mensalidade
         </h1>
-        <p className="mt-4 text-sm leading-6 text-inkMuted">
+        <p className="mt-2 text-xs leading-relaxed text-inkMuted">
           {mensagem ||
             "Algumas ações estão restritas porque a mensalidade da empresa está pendente."}
         </p>
 
-        {carregando && <p className="mt-6 text-sm text-inkMuted">Carregando dados da assinatura...</p>}
-        {erro && <p className="mt-6 text-sm text-[#8c3d35]" role="alert">{erro}</p>}
+        {carregando && <p className="mt-6 text-xs text-inkMuted">Carregando dados da assinatura...</p>}
+        {erro && <p className="mt-6 text-xs text-rose-600" role="alert">{erro}</p>}
 
         {assinatura && (
-          <dl className="mt-6 grid gap-4 rounded-2xl bg-[#f6f1e8] p-4 text-sm sm:grid-cols-2">
+          <dl className="mt-5 grid gap-4 rounded-xl bg-surfaceAlt/60 border border-border p-4 text-xs sm:grid-cols-2">
             <div>
               <dt className="text-inkMuted">Vencimento</dt>
               <dd className="mt-1 font-semibold text-ink">{formatarData(assinatura.paidUntil)}</dd>
@@ -103,7 +103,7 @@ export function AssinaturaPendente() {
           {somenteLeitura && (
             <Link
               to="/"
-              className="rounded-xl bg-[#2f4f48] px-4 py-2.5 text-sm font-semibold text-[#f9f5f0]"
+              className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accentMuted"
             >
               Voltar ao sistema em modo de leitura
             </Link>
@@ -111,7 +111,7 @@ export function AssinaturaPendente() {
           <button
             type="button"
             onClick={logout}
-            className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-inkMuted"
+            className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-inkMuted hover:text-ink"
           >
             Sair
           </button>
