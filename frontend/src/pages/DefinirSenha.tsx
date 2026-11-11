@@ -26,8 +26,10 @@ export function DefinirSenha() {
     try {
       await finishFirstAccess(password, passwordConfirmation);
       navigate("/", { replace: true });
-    } catch {
-      setError("Não foi possível definir a senha. Use pelo menos 6 caracteres.");
+    } catch (err: unknown) {
+      const resp = (err as { response?: { data?: { error?: string; detalhes?: Array<{ mensagem: string }> } } })?.response?.data;
+      const detalheMsg = resp?.detalhes?.[0]?.mensagem;
+      setError(detalheMsg ?? resp?.error ?? "Não foi possível definir a senha. Use pelo menos 8 caracteres contendo letras e números.");
     } finally {
       setLoading(false);
     }
@@ -40,18 +42,18 @@ export function DefinirSenha() {
           <Logo variant="login" subtitle="Primeiro acesso" />
         </div>
         <h1 className="mt-2 text-3xl text-ink">Crie sua senha</h1>
-        <p className="mt-2 text-sm leading-6 text-inkMuted">Escolha uma senha pessoal para continuar no Climatiza.</p>
+        <p className="mt-2 text-sm leading-6 text-inkMuted">Escolha uma senha pessoal para continuar no Climatiza (mínimo de 8 caracteres com letras e números).</p>
 
         {error && <p className="mt-4 rounded-2xl border border-[#d9a39b] bg-[#f6e1df] px-4 py-3 text-sm text-[#8c3d35]" role="alert">{error}</p>}
 
         <div className="mt-6 space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-inkMuted">Nova senha</span>
-            <input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="campo-input" />
+            <input required minLength={8} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="campo-input" />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-inkMuted">Confirme a nova senha</span>
-            <input required minLength={6} type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} className="campo-input" />
+            <input required minLength={8} type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} className="campo-input" />
           </label>
         </div>
 

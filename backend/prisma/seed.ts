@@ -14,7 +14,7 @@ const credenciais = z.object({
 });
 
 if (!credenciais.success) {
-  throw new Error("Defina SEED_ADMIN_EMAIL válido e SEED_ADMIN_PASSWORD com pelo menos 16 caracteres.");
+  throw new Error("Defina SEED_ADMIN_EMAIL válido e SEED_ADMIN_PASSWORD com pelo menos 8 caracteres.");
 }
 
 const { email, senha } = credenciais.data;

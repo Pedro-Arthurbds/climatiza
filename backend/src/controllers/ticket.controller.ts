@@ -547,7 +547,15 @@ export async function criarAnexo(req: Request, res: Response) {
 }
 
 export async function removerAnexo(req: Request, res: Response) {
-  await prisma.ticketAttachment.delete({ where: { id: (req.params.anexoId as string) } });
+  const anexo = await prisma.ticketAttachment.findUniqueOrThrow({
+    where: { id: (req.params.anexoId as string) },
+  });
+
+  if (anexo.ticketId !== (req.params.id as string)) {
+    throw new AppError("Anexo não encontrado neste chamado", 404);
+  }
+
+  await prisma.ticketAttachment.delete({ where: { id: anexo.id } });
   return res.status(204).send();
 }
 

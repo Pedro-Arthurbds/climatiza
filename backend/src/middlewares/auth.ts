@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { jwtVerify } from "jose";
+import { prisma } from "../lib/prisma";
 import { jwtSecret } from "../utils/jwtSecret";
 
 declare global {
@@ -28,9 +29,20 @@ export async function autenticar(
 
   try {
     const { payload } = await jwtVerify(token, jwtSecret);
-    req.userId = payload.sub as string;
-    req.userRole = payload.role as string | undefined;
-    req.mustChangePassword = payload.mustChangePassword === true;
+    const userId = payload.sub as string;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, isActive: true, role: true, mustChangePassword: true },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: "Usuário inativo ou inexistente" });
+    }
+
+    req.userId = user.id;
+    req.userRole = user.role;
+    req.mustChangePassword = user.mustChangePassword;
 
     if (req.mustChangePassword && req.path !== "/first-password") {
       return res.status(403).json({ error: "Defina sua senha antes de continuar" });

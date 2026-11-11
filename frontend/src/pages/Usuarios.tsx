@@ -46,8 +46,8 @@ export function Usuarios() {
       return;
     }
 
-    if (password.length < 6) {
-      setMensagemErro("A senha deve ter pelo menos 6 caracteres.");
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setMensagemErro("A senha deve ter pelo menos 8 caracteres contendo letras e números.");
       return;
     }
 
@@ -66,8 +66,10 @@ export function Usuarios() {
       setMostrarForm(false);
       setMensagemSucesso("Usuário cadastrado. Ele deverá definir uma nova senha no primeiro acesso.");
       await carregar();
-    } catch {
-      setMensagemErro("Não foi possível criar o usuário. Verifique os dados e tente novamente.");
+    } catch (err: unknown) {
+      const resp = (err as { response?: { data?: { error?: string; detalhes?: Array<{ mensagem: string }> } } })?.response?.data;
+      const detalheMsg = resp?.detalhes?.[0]?.mensagem;
+      setMensagemErro(detalheMsg ?? resp?.error ?? "Não foi possível criar o usuário. Verifique os dados e tente novamente.");
     } finally {
       setEnviando(false);
     }
@@ -125,8 +127,8 @@ export function Usuarios() {
             <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="campo-input" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-inkMuted">Senha temporária</span>
-            <input required minLength={6} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="campo-input" />
+            <span className="mb-1 block text-sm font-medium text-inkMuted">Senha temporária (mín. 8 caracteres com letras e números)</span>
+            <input required minLength={8} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="campo-input" />
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-inkMuted">Papel</span>

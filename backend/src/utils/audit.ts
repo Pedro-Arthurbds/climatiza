@@ -3,7 +3,7 @@ import type { Tx } from "../lib/prisma";
 export async function registrarAuditoria(
   tx: Tx,
   params: {
-    entityType: "Ticket" | "Client" | "Address";
+    entityType: "Ticket" | "Client" | "Address" | "User";
     entityId: string;
     action: string;
     userId?: string;

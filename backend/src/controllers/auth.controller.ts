@@ -5,6 +5,7 @@ import { AppError } from "../middlewares/errorHandler";
 import { compararSenha, hashSenha } from "../utils/hash";
 import { emitirToken } from "../utils/jwt";
 import { obterEstadoAssinatura } from "../services/assinatura";
+import { senhaForteSchema } from "../utils/senhaValidator";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -74,8 +75,8 @@ export async function me(req: Request, res: Response) {
 }
 
 const firstPasswordSchema = z.object({
-  password: z.string().min(6),
-  passwordConfirmation: z.string().min(6),
+  password: senhaForteSchema,
+  passwordConfirmation: z.string().min(1),
 });
 
 export async function definirSenhaInicial(req: Request, res: Response) {
